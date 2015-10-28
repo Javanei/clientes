@@ -1,0 +1,12 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ecmfiles.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ecmfiles_WebReference_DocumentServiceService" Type="(Web Service URL)" Scope="Application">
+      <Value Profile="(Default)">http://localhost:8080/webdesk/DocumentService</Value>
+    </Setting>
+    <Setting Name="ecmfiles_ECMFolderService_FolderServiceService" Type="(Web Service URL)" Scope="Application">
+      <Value Profile="(Default)">http://localhost:8080/webdesk/FolderService</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
