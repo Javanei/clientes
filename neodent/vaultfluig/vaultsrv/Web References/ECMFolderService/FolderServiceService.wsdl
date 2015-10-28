@@ -1,0 +1,780 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:ns2="http://schemas.xmlsoap.org/soap/http" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://ws.dm.webdesk.technology.datasul.com/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:ns1="http://jaxb.dev.java.net/array" name="FolderServiceService" targetNamespace="http://ws.dm.webdesk.technology.datasul.com/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <xs:schema attributeFormDefault="unqualified" elementFormDefault="unqualified" targetNamespace="http://ws.dm.webdesk.technology.datasul.com/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <xs:complexType name="documentDto">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="accessCount" type="xs:int" />
+          <xs:element minOccurs="0" name="activeUserApprover" type="xs:boolean" />
+          <xs:element minOccurs="0" name="activeVersion" type="xs:boolean" />
+          <xs:element minOccurs="0" name="additionalComments" type="xs:string" />
+          <xs:element minOccurs="0" name="allowMuiltiCardsPerUser" type="xs:boolean" />
+          <xs:element minOccurs="0" name="approvalAndOr" type="xs:boolean" />
+          <xs:element minOccurs="0" name="approved" type="xs:boolean" />
+          <xs:element minOccurs="0" name="approvedDate" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="articleContent" type="xs:string" />
+          <xs:element minOccurs="0" name="atualizationId" type="xs:int" />
+          <xs:element minOccurs="0" name="backgroundColor" type="xs:string" />
+          <xs:element minOccurs="0" name="backgroundImage" type="xs:string" />
+          <xs:element minOccurs="0" name="bannerImage" type="xs:string" />
+          <xs:element minOccurs="0" name="cardDescription" type="xs:string" />
+          <xs:element minOccurs="0" name="colleagueId" type="xs:string" />
+          <xs:element minOccurs="0" name="colleagueName" type="xs:string" />
+          <xs:element name="companyId" type="xs:long" />
+          <xs:element minOccurs="0" name="crc" type="xs:long" />
+          <xs:element minOccurs="0" name="createDate" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="datasetName" type="xs:string" />
+          <xs:element minOccurs="0" name="dateFormStarted" type="xs:boolean" />
+          <xs:element minOccurs="0" name="deleted" type="xs:boolean" />
+          <xs:element minOccurs="0" name="documentDescription" type="xs:string" />
+          <xs:element minOccurs="0" name="documentId" type="xs:int" />
+          <xs:element minOccurs="0" name="documentKeyWord" type="xs:string" />
+          <xs:element minOccurs="0" name="documentPropertyNumber" type="xs:int" />
+          <xs:element minOccurs="0" name="documentPropertyVersion" type="xs:int" />
+          <xs:element minOccurs="0" name="documentType" type="xs:string" />
+          <xs:element minOccurs="0" name="documentTypeId" type="xs:string" />
+          <xs:element minOccurs="0" name="downloadEnabled" type="xs:boolean" />
+          <xs:element minOccurs="0" name="draft" type="xs:boolean" />
+          <xs:element minOccurs="0" name="expirationDate" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="expiredForm" type="xs:boolean" />
+          <xs:element minOccurs="0" name="expires" type="xs:boolean" />
+          <xs:element minOccurs="0" name="externalDocumentId" type="xs:string" />
+          <xs:element minOccurs="0" name="favorite" type="xs:boolean" />
+          <xs:element minOccurs="0" name="folderId" type="xs:int" />
+          <xs:element name="forAproval" type="xs:boolean" />
+          <xs:element minOccurs="0" name="iconId" type="xs:int" />
+          <xs:element minOccurs="0" name="iconPath" type="xs:string" />
+          <xs:element minOccurs="0" name="imutable" type="xs:boolean" />
+          <xs:element minOccurs="0" name="indexed" type="xs:boolean" />
+          <xs:element name="inheritSecurity" type="xs:boolean" />
+          <xs:element minOccurs="0" name="internalVisualizer" type="xs:boolean" />
+          <xs:element minOccurs="0" name="isEncrypted" type="xs:boolean" />
+          <xs:element minOccurs="0" name="keyWord" type="xs:string" />
+          <xs:element minOccurs="0" name="languageId" type="xs:string" />
+          <xs:element minOccurs="0" name="languageIndicator" type="xs:string" />
+          <xs:element minOccurs="0" name="lastModifiedDate" type="xs:dateTime" />
+          <xs:element minOccurs="0" name="lastModifiedTime" type="xs:string" />
+          <xs:element minOccurs="0" name="metaListId" type="xs:int" />
+          <xs:element minOccurs="0" name="metaListRecordId" type="xs:int" />
+          <xs:element minOccurs="0" name="newStructure" type="xs:boolean" />
+          <xs:element name="onCheckout" type="xs:boolean" />
+          <xs:element minOccurs="0" name="parentDocumentId" type="xs:int" />
+          <xs:element minOccurs="0" name="permissionType" type="xs:int" />
+          <xs:element minOccurs="0" name="phisicalFile" type="xs:string" />
+          <xs:element minOccurs="0" name="phisicalFileSize" type="xs:float" />
+          <xs:element minOccurs="0" name="priority" type="xs:int" />
+          <xs:element minOccurs="0" name="privateColleagueId" type="xs:string" />
+          <xs:element minOccurs="0" name="privateDocument" type="xs:boolean" />
+          <xs:element minOccurs="0" name="protectedCopy" type="xs:boolean" />
+          <xs:element minOccurs="0" name="publisherId" type="xs:string" />
+          <xs:element minOccurs="0" name="publisherName" type="xs:string" />
+          <xs:element minOccurs="0" name="relatedFiles" type="xs:string" />
+          <xs:element minOccurs="0" name="restrictionType" type="xs:int" />
+          <xs:element name="rowId" type="xs:int" />
+          <xs:element minOccurs="0" name="searchNumber" type="xs:int" />
+          <xs:element name="securityLevel" type="xs:int" />
+          <xs:element minOccurs="0" name="siteCode" type="xs:string" />
+          <xs:element minOccurs="0" name="sociableDocumentDto" type="tns:sociableDocumentDto" />
+          <xs:element minOccurs="0" name="tool" type="xs:boolean" />
+          <xs:element minOccurs="0" name="topicId" type="xs:int" />
+          <xs:element name="translated" type="xs:boolean" />
+          <xs:element minOccurs="0" name="UUID" type="xs:string" />
+          <xs:element name="updateIsoProperties" type="xs:boolean" />
+          <xs:element minOccurs="0" name="userAnswerForm" type="xs:boolean" />
+          <xs:element minOccurs="0" name="userNotify" type="xs:boolean" />
+          <xs:element minOccurs="0" name="userPermission" type="xs:int" />
+          <xs:element minOccurs="0" name="validationStartDate" type="xs:dateTime" />
+          <xs:element name="version" type="xs:int" />
+          <xs:element minOccurs="0" name="versionDescription" type="xs:string" />
+          <xs:element minOccurs="0" name="versionOption" type="xs:string" />
+          <xs:element minOccurs="0" name="visualization" type="xs:string" />
+          <xs:element minOccurs="0" name="volumeId" type="xs:string" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="sociableDocumentDto">
+        <xs:sequence>
+          <xs:element name="commented" type="xs:boolean" />
+          <xs:element name="denounced" type="xs:boolean" />
+          <xs:element minOccurs="0" name="documentId" type="xs:int" />
+          <xs:element name="following" type="xs:boolean" />
+          <xs:element name="liked" type="xs:boolean" />
+          <xs:element minOccurs="0" name="numberComments" type="xs:int" />
+          <xs:element minOccurs="0" name="numberDenouncements" type="xs:int" />
+          <xs:element minOccurs="0" name="numberFollows" type="xs:int" />
+          <xs:element minOccurs="0" name="numberLikes" type="xs:int" />
+          <xs:element minOccurs="0" name="numberShares" type="xs:int" />
+          <xs:element name="shared" type="xs:boolean" />
+          <xs:element minOccurs="0" name="sociableId" type="xs:long" />
+          <xs:element minOccurs="0" name="version" type="xs:int" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="approverWithLevelDto">
+        <xs:sequence>
+          <xs:element name="approverType" type="xs:int" />
+          <xs:element minOccurs="0" name="colleagueId" type="xs:string" />
+          <xs:element name="companyId" type="xs:long" />
+          <xs:element name="documentId" type="xs:int" />
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="foo" nillable="true" type="xs:string" />
+          <xs:element name="levelId" type="xs:int" />
+          <xs:element name="version" type="xs:int" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="webServiceMessage">
+        <xs:sequence>
+          <xs:element name="companyId" type="xs:long" />
+          <xs:element minOccurs="0" name="documentDescription" type="xs:string" />
+          <xs:element name="documentId" type="xs:int" />
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="foo" nillable="true" type="xs:string" />
+          <xs:element name="version" type="xs:int" />
+          <xs:element minOccurs="0" name="webServiceMessage" type="xs:string" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="documentSecurityConfigDto">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="attributionType" type="xs:int" />
+          <xs:element minOccurs="0" name="attributionValue" type="xs:string" />
+          <xs:element name="companyId" type="xs:long" />
+          <xs:element name="documentId" type="xs:int" />
+          <xs:element minOccurs="0" name="downloadEnabled" type="xs:boolean" />
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="foo" nillable="true" type="xs:string" />
+          <xs:element minOccurs="0" name="permission" type="xs:boolean" />
+          <xs:element minOccurs="0" name="securityLevel" type="xs:int" />
+          <xs:element minOccurs="0" name="securityVersion" type="xs:boolean" />
+          <xs:element name="sequence" type="xs:int" />
+          <xs:element minOccurs="0" name="showContent" type="xs:boolean" />
+          <xs:element name="version" type="xs:int" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="approverDto">
+        <xs:sequence>
+          <xs:element name="approverType" type="xs:int" />
+          <xs:element minOccurs="0" name="colleagueId" type="xs:string" />
+          <xs:element name="companyId" type="xs:long" />
+          <xs:element name="documentId" type="xs:int" />
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="foo" nillable="true" type="xs:string" />
+          <xs:element name="levelId" type="xs:int" />
+          <xs:element name="version" type="xs:int" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="approvalLevelDto">
+        <xs:sequence>
+          <xs:element name="approvalMode" type="xs:int" />
+          <xs:element minOccurs="0" name="levelDescription" type="xs:string" />
+          <xs:element name="levelId" type="xs:int" />
+          <xs:element name="mandatorySignature" type="xs:boolean" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="documentDtoArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="tns:documentDto" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="approverWithLevelDtoArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="tns:approverWithLevelDto" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="webServiceMessageArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="tns:webServiceMessage" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="documentSecurityConfigDtoArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="tns:documentSecurityConfigDto" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="approverDtoArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="tns:approverDto" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:complexType name="approvalLevelDtoArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="tns:approvalLevelDto" />
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="Exception" type="tns:Exception" />
+      <xs:complexType name="Exception">
+        <xs:sequence>
+          <xs:element minOccurs="0" name="message" type="xs:string" />
+        </xs:sequence>
+      </xs:complexType>
+    </xs:schema>
+    <xs:schema targetNamespace="http://jaxb.dev.java.net/array" version="1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+      <xs:complexType name="stringArray" final="#all">
+        <xs:sequence>
+          <xs:element minOccurs="0" maxOccurs="unbounded" name="item" nillable="true" type="xs:string" />
+        </xs:sequence>
+      </xs:complexType>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="createFolderResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="getSubFolders">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="getSubFoldersOnDemand">
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="user" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="parentDocumentId" type="xsd:int" />
+    <wsdl:part name="privateFolder" type="xsd:boolean" />
+    <wsdl:part name="documentTypes" type="ns1:stringArray" />
+    <wsdl:part name="limit" type="xsd:int" />
+    <wsdl:part name="lastRowId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="getPrivateChildren">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="parentDocumentId" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getSubFoldersOnDemandResponse">
+    <wsdl:part name="DocumentDto" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="getChildren">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="getSubFoldersPermission">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+    <wsdl:part name="permission" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getSubFoldersResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="deleteDocument">
+    <wsdl:part name="user" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="createFolder">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+    <wsdl:part name="security" type="tns:documentSecurityConfigDtoArray" />
+    <wsdl:part name="Approvers" type="tns:approverDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="createSimpleFolder">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="parentDocumentId" type="xsd:int" />
+    <wsdl:part name="publisherId" type="xsd:string" />
+    <wsdl:part name="documentDescription" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="Exception">
+    <wsdl:part name="Exception" element="tns:Exception" />
+  </wsdl:message>
+  <wsdl:message name="restoreDocument">
+    <wsdl:part name="user" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="updateFolder">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+    <wsdl:part name="security" type="tns:documentSecurityConfigDtoArray" />
+    <wsdl:part name="Approvers" type="tns:approverDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="createFolderWithApprovementLevels">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+    <wsdl:part name="security" type="tns:documentSecurityConfigDtoArray" />
+    <wsdl:part name="ApproversWithLevels" type="tns:approverWithLevelDtoArray" />
+    <wsdl:part name="Levels" type="tns:approvalLevelDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="updateFolderWithApprovementLevelsResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="getChildrenResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="createFolderWithApprovementLevelsResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="getSecurity">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getSubPrivateFoldersResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="getApproversResponse">
+    <wsdl:part name="Approvers" type="tns:approverWithLevelDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="findRecycledDocumentsResponse">
+    <wsdl:part name="result" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="createSimpleFolderResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="getPrivateChildrenResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="findRecycledDocuments">
+    <wsdl:part name="user" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="getFolderResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="getUserPermissions">
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="version" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getUserPermissionsResponse">
+    <wsdl:part name="result" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="destroyDocument">
+    <wsdl:part name="user" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="getRootFolders">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="deleteDocumentResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="getFolder">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+    <wsdl:part name="colleagueId" type="xsd:string" />
+  </wsdl:message>
+  <wsdl:message name="getRootFoldersResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="getSubPrivateFolders">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getApprovers">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="documentId" type="xsd:int" />
+  </wsdl:message>
+  <wsdl:message name="getSecurityResponse">
+    <wsdl:part name="Security" type="tns:documentSecurityConfigDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="restoreDocumentResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="destroyDocumentResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="updateFolderResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:message name="updateSimpleFolder">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="updateFolderWithApprovementLevels">
+    <wsdl:part name="username" type="xsd:string" />
+    <wsdl:part name="password" type="xsd:string" />
+    <wsdl:part name="companyId" type="xsd:int" />
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+    <wsdl:part name="security" type="tns:documentSecurityConfigDtoArray" />
+    <wsdl:part name="ApproversWithLevels" type="tns:approverWithLevelDtoArray" />
+    <wsdl:part name="Levels" type="tns:approvalLevelDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="getSubFoldersPermissionResponse">
+    <wsdl:part name="Document" type="tns:documentDtoArray" />
+  </wsdl:message>
+  <wsdl:message name="updateSimpleFolderResponse">
+    <wsdl:part name="result" type="tns:webServiceMessageArray" />
+  </wsdl:message>
+  <wsdl:portType name="FolderService">
+    <wsdl:operation name="getUserPermissions">
+      <wsdl:input name="getUserPermissions" message="tns:getUserPermissions" />
+      <wsdl:output name="getUserPermissionsResponse" message="tns:getUserPermissionsResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getFolder">
+      <wsdl:input name="getFolder" message="tns:getFolder" />
+      <wsdl:output name="getFolderResponse" message="tns:getFolderResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getApprovers">
+      <wsdl:input name="getApprovers" message="tns:getApprovers" />
+      <wsdl:output name="getApproversResponse" message="tns:getApproversResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="findRecycledDocuments">
+      <wsdl:input name="findRecycledDocuments" message="tns:findRecycledDocuments" />
+      <wsdl:output name="findRecycledDocumentsResponse" message="tns:findRecycledDocumentsResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getSubPrivateFolders">
+      <wsdl:input name="getSubPrivateFolders" message="tns:getSubPrivateFolders" />
+      <wsdl:output name="getSubPrivateFoldersResponse" message="tns:getSubPrivateFoldersResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="restoreDocument">
+      <wsdl:input name="restoreDocument" message="tns:restoreDocument" />
+      <wsdl:output name="restoreDocumentResponse" message="tns:restoreDocumentResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="createFolder">
+      <wsdl:input name="createFolder" message="tns:createFolder" />
+      <wsdl:output name="createFolderResponse" message="tns:createFolderResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getSubFoldersOnDemand">
+      <wsdl:input name="getSubFoldersOnDemand" message="tns:getSubFoldersOnDemand" />
+      <wsdl:output name="getSubFoldersOnDemandResponse" message="tns:getSubFoldersOnDemandResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getChildren">
+      <wsdl:input name="getChildren" message="tns:getChildren" />
+      <wsdl:output name="getChildrenResponse" message="tns:getChildrenResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="destroyDocument">
+      <wsdl:input name="destroyDocument" message="tns:destroyDocument" />
+      <wsdl:output name="destroyDocumentResponse" message="tns:destroyDocumentResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="updateFolder">
+      <wsdl:input name="updateFolder" message="tns:updateFolder" />
+      <wsdl:output name="updateFolderResponse" message="tns:updateFolderResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getSubFoldersPermission">
+      <wsdl:input name="getSubFoldersPermission" message="tns:getSubFoldersPermission" />
+      <wsdl:output name="getSubFoldersPermissionResponse" message="tns:getSubFoldersPermissionResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="updateFolderWithApprovementLevels">
+      <wsdl:input name="updateFolderWithApprovementLevels" message="tns:updateFolderWithApprovementLevels" />
+      <wsdl:output name="updateFolderWithApprovementLevelsResponse" message="tns:updateFolderWithApprovementLevelsResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="deleteDocument">
+      <wsdl:input name="deleteDocument" message="tns:deleteDocument" />
+      <wsdl:output name="deleteDocumentResponse" message="tns:deleteDocumentResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getPrivateChildren">
+      <wsdl:input name="getPrivateChildren" message="tns:getPrivateChildren" />
+      <wsdl:output name="getPrivateChildrenResponse" message="tns:getPrivateChildrenResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getSecurity">
+      <wsdl:input name="getSecurity" message="tns:getSecurity" />
+      <wsdl:output name="getSecurityResponse" message="tns:getSecurityResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getRootFolders">
+      <wsdl:input name="getRootFolders" message="tns:getRootFolders" />
+      <wsdl:output name="getRootFoldersResponse" message="tns:getRootFoldersResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="createFolderWithApprovementLevels">
+      <wsdl:input name="createFolderWithApprovementLevels" message="tns:createFolderWithApprovementLevels" />
+      <wsdl:output name="createFolderWithApprovementLevelsResponse" message="tns:createFolderWithApprovementLevelsResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="getSubFolders">
+      <wsdl:input name="getSubFolders" message="tns:getSubFolders" />
+      <wsdl:output name="getSubFoldersResponse" message="tns:getSubFoldersResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="updateSimpleFolder">
+      <wsdl:input name="updateSimpleFolder" message="tns:updateSimpleFolder" />
+      <wsdl:output name="updateSimpleFolderResponse" message="tns:updateSimpleFolderResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+    <wsdl:operation name="createSimpleFolder">
+      <wsdl:input name="createSimpleFolder" message="tns:createSimpleFolder" />
+      <wsdl:output name="createSimpleFolderResponse" message="tns:createSimpleFolderResponse" />
+      <wsdl:fault name="Exception" message="tns:Exception" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="FolderServiceServiceSoapBinding" type="tns:FolderService">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="rpc" />
+    <wsdl:operation name="getFolder">
+      <soap:operation soapAction="getFolder" style="rpc" />
+      <wsdl:input name="getFolder">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getFolderResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getUserPermissions">
+      <soap:operation soapAction="getUserPermissions" style="rpc" />
+      <wsdl:input name="getUserPermissions">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getUserPermissionsResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getApprovers">
+      <soap:operation soapAction="getApprovers" style="rpc" />
+      <wsdl:input name="getApprovers">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getApproversResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="findRecycledDocuments">
+      <soap:operation soapAction="findRecycledDocuments" style="rpc" />
+      <wsdl:input name="findRecycledDocuments">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="findRecycledDocumentsResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getSubPrivateFolders">
+      <soap:operation soapAction="getSubPrivateFolders" style="rpc" />
+      <wsdl:input name="getSubPrivateFolders">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getSubPrivateFoldersResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="restoreDocument">
+      <soap:operation soapAction="restoreDocument" style="rpc" />
+      <wsdl:input name="restoreDocument">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="restoreDocumentResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="createFolder">
+      <soap:operation soapAction="createFolder" style="rpc" />
+      <wsdl:input name="createFolder">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="createFolderResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getSubFoldersOnDemand">
+      <soap:operation soapAction="getSubFoldersOnDemand" style="rpc" />
+      <wsdl:input name="getSubFoldersOnDemand">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getSubFoldersOnDemandResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getChildren">
+      <soap:operation soapAction="getChildren" style="rpc" />
+      <wsdl:input name="getChildren">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getChildrenResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="destroyDocument">
+      <soap:operation soapAction="destroyDocument" style="rpc" />
+      <wsdl:input name="destroyDocument">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="destroyDocumentResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getSubFoldersPermission">
+      <soap:operation soapAction="getSubFoldersPermission" style="rpc" />
+      <wsdl:input name="getSubFoldersPermission">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getSubFoldersPermissionResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="updateFolder">
+      <soap:operation soapAction="updateFolder" style="rpc" />
+      <wsdl:input name="updateFolder">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="updateFolderResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="updateFolderWithApprovementLevels">
+      <soap:operation soapAction="updateFolderWithApprovementLevels" style="rpc" />
+      <wsdl:input name="updateFolderWithApprovementLevels">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="updateFolderWithApprovementLevelsResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="deleteDocument">
+      <soap:operation soapAction="deleteDocument" style="rpc" />
+      <wsdl:input name="deleteDocument">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="deleteDocumentResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getSecurity">
+      <soap:operation soapAction="getSecurity" style="rpc" />
+      <wsdl:input name="getSecurity">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getSecurityResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getPrivateChildren">
+      <soap:operation soapAction="getPrivateChildren" style="rpc" />
+      <wsdl:input name="getPrivateChildren">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getPrivateChildrenResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="createFolderWithApprovementLevels">
+      <soap:operation soapAction="createFolderWithApprovementLevels" style="rpc" />
+      <wsdl:input name="createFolderWithApprovementLevels">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="createFolderWithApprovementLevelsResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="getRootFolders">
+      <soap:operation soapAction="getRootFolders" style="rpc" />
+      <wsdl:input name="getRootFolders">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getRootFoldersResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getSubFolders">
+      <soap:operation soapAction="getSubFolders" style="rpc" />
+      <wsdl:input name="getSubFolders">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="getSubFoldersResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="createSimpleFolder">
+      <soap:operation soapAction="createSimpleFolder" style="rpc" />
+      <wsdl:input name="createSimpleFolder">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="createSimpleFolderResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="updateSimpleFolder">
+      <soap:operation soapAction="updateSimpleFolder" style="rpc" />
+      <wsdl:input name="updateSimpleFolder">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:input>
+      <wsdl:output name="updateSimpleFolderResponse">
+        <soap:body use="literal" namespace="http://ws.dm.webdesk.technology.datasul.com/" />
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault use="literal" name="Exception" namespace="" />
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="FolderServiceService">
+    <wsdl:port name="FolderServicePort" binding="tns:FolderServiceServiceSoapBinding">
+      <soap:address location="http://localhost:8080/webdesk/FolderService" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
