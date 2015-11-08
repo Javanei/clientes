@@ -129,6 +129,37 @@ namespace vaultsrv
         }
 
         /**
+         * Faz o download do arquivo de log de um desenho.
+         */
+        public Boolean downloadItemLog(string itemCode, string baseDir)
+        {
+            Boolean result = false;
+            ECMFolderService.documentDto folder = findECMFolderChild(rootFolder.documentId, itemCode);
+            if (folder != null)
+            {
+                string fileName = itemCode + ".log";
+                ECMFolderService.documentDto exist = getECMChild(fileName, folder.documentId);
+                if (exist != null)
+                {
+                    LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo a baixar do Fluig: " + exist.phisicalFile);
+                    byte[] b = docService.getDocumentContent(ecmLogin, ecmPassword, ecmCompany, exist.documentId, ecmUser, exist.version, exist.phisicalFile);
+                    if (b == null)
+                    {
+                        throw new Exception("Nao conseguiu baixar do Fluig o documento " + exist.documentId);
+                    }
+                    string destFile = baseDir + "\\" + fileName;
+
+                    FileStream fs = new FileStream(destFile, FileMode.CreateNew, FileAccess.Write);
+                    fs.Write(b, 0, b.Length);
+                    fs.Flush();
+                    fs.Close();
+                    result = true;
+                }
+            }
+            return result;
+        }
+
+        /**
          * Faz o download dos arquivos de uma pasta do ECM.
          */
         public Dictionary<string, string> downloadECMDocuments(string itemCode, string baseDir, Dictionary<string, string> fileProps)

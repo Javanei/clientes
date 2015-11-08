@@ -52,6 +52,7 @@ namespace vaultsrv
         private static string downdir = "c:\\temp\\";
         private static Boolean download = true;
         private static Boolean listall = false;
+        private static Boolean lAudit = false;
         private static String checkInDate = null;
         private static Boolean converter = false;
         private static Boolean delFiles = false;
@@ -94,6 +95,8 @@ namespace vaultsrv
         static Boolean lPreset = false;
         // Controla a lista dos desenhos que estão em desenv por estar em checkout
         List<String> lCheckout = new List<String>();
+        // Lista de itens auditados
+        static List<AuditItem> audits = new List<AuditItem>();
 
         [STAThread]
         static void Main(string[] args)
@@ -301,9 +304,15 @@ namespace vaultsrv
                                                                                                                         }
                                                                                                                     }
                                                                                                                     else
-                                                                                                                    {
-                                                                                                                        item = args[i];
-                                                                                                                    }
+                                                                                                                        if (args[i].Equals("-audit"))
+                                                                                                                        {
+                                                                                                                            lAudit = true;
+                                                                                                                            listall = true;
+                                                                                                                        }
+                                                                                                                        else
+                                                                                                                        {
+                                                                                                                            item = args[i];
+                                                                                                                        }
                 }
             }
 
@@ -322,6 +331,15 @@ namespace vaultsrv
                     ecmDownload = true;
                 }
             }
+
+            string auditDir = downdir + "audit";
+            if (lAudit && !Directory.Exists(auditDir))
+            {
+                LOG.imprimeLog(System.DateTime.Now + " ==== Vai criar diretorio=" + auditDir);
+                Directory.CreateDirectory(auditDir);
+                LOG.imprimeLog(System.DateTime.Now + " ==== Criou diretorio=" + auditDir);
+            }
+            string auditFile = auditDir + "\\audit.csv";
 
             //ADSK.SecurityService ss = null;
             try
@@ -603,214 +621,245 @@ namespace vaultsrv
 
                                     //filename = file.Name;
 
-                                    if (download && alterou)
+                                    if (lAudit)
                                     {
-                                        DeleteFilesFromDir(ItemDir);
-                                        LOG.imprimeLog(System.DateTime.Now + " ==== Limpou diretorio=" + ItemDir);
-                                        DownloadFile(fileDown, ItemFile, documentService);
-                                        LOG.imprimeLog(System.DateTime.Now + " ==== Baixou arquivo=" + ItemFile);
-                                        if (ItemFile.ToLower().EndsWith(".dwf"))
+                                        AuditItem auditIt = new AuditItem();
+                                        auditIt.item = DeCodigo;
+                                        auditIt.checkinDate = file.CkInDate != null ? file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss") : "NULL";
+                                        auditIt.checkedOut = file.CheckedOut.ToString();
+                                        audits.Add(auditIt);
+                                        try
                                         {
-                                            try
+
+                                            if (ecm.downloadItemLog(DeCodigo, auditDir))
                                             {
-                                                fileProps = extract(ItemDir, ItemFile, fileProps);
-                                                if (converter)
+                                                DeCodigoLog = auditDir + "\\" + DeCodigo + ".log";
+                                                Dictionary<string, string> d = ReadPropertyFile(DeCodigoLog);
+                                                auditIt.fluigCheckinDate = GetProperty(d, "CkInDate");
+                                                auditIt.fluigCheckedOut = GetProperty(d, "CheckedOut");
+                                                DeleteFile(DeCodigoLog);
+                                            }
+                                            else
+                                            {
+                                                auditIt.message = "Não achou o arquivo de LOG no fluig";
+                                            }
+                                        }
+                                        catch (Exception exDown)
+                                        {
+                                            auditIt.message = exDown.Message;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (download && alterou)
+                                        {
+                                            DeleteFilesFromDir(ItemDir);
+                                            LOG.imprimeLog(System.DateTime.Now + " ==== Limpou diretorio=" + ItemDir);
+                                            DownloadFile(fileDown, ItemFile, documentService);
+                                            LOG.imprimeLog(System.DateTime.Now + " ==== Baixou arquivo=" + ItemFile);
+                                            if (ItemFile.ToLower().EndsWith(".dwf"))
+                                            {
+                                                try
                                                 {
-                                                    if (!single)
+                                                    fileProps = extract(ItemDir, ItemFile, fileProps);
+                                                    if (converter)
                                                     {
-                                                        StringBuilder sb = new StringBuilder();
-                                                        sb.Append("<configuration_file>");
-                                                        sb.Append(AddFileToBpj(ItemFile));
-                                                        sb.Append("</configuration_file>");
-
-                                                        StreamWriter sw = new StreamWriter(ItemFile + ".bpj");
-                                                        sw.Write(sb.ToString());
-                                                        sw.Flush();
-                                                        sw.Close();
-                                                        LOG.imprimeLog(System.DateTime.Now + " === Arquivo bpj: " + sb.ToString());
-
-                                                        /*if (System.IO.File.Exists(imageDir + "\\execok.exe.txt"))
+                                                        if (!single)
                                                         {
-                                                            DeleteFile(imageDir + "\\execok.exe.txt");
-                                                        }*/
+                                                            StringBuilder sb = new StringBuilder();
+                                                            sb.Append("<configuration_file>");
+                                                            sb.Append(AddFileToBpj(ItemFile));
+                                                            sb.Append("</configuration_file>");
 
-                                                        bool bOk = false;
-                                                        System.Diagnostics.Process proc = new System.Diagnostics.Process();
-                                                        proc.StartInfo.FileName = dwfCommand;
-                                                        proc.StartInfo.Arguments = /*"\"" +*/ ItemFile + ".bpj" /*+ "\""*/;
-                                                        proc.StartInfo.UseShellExecute = false;
-                                                        proc.StartInfo.RedirectStandardOutput = false;
-                                                        LOG.imprimeLog(System.DateTime.Now + " ==== Vai converter=" + dwfCommand + " " + proc.StartInfo.Arguments);
-                                                        proc.Start();
-                                                        proc.WaitForExit(60000);
-                                                        if (!proc.HasExited)
-                                                        {
-                                                            LOG.imprimeLog(System.DateTime.Now + " ====== ERRO executando DesignReview, tentando fechar");
-                                                            proc.Kill();
-                                                        }
-                                                        else
-                                                        {
-                                                            // Espera a imagem começar a ser gerada pelo driver.
+                                                            StreamWriter sw = new StreamWriter(ItemFile + ".bpj");
+                                                            sw.Write(sb.ToString());
+                                                            sw.Flush();
+                                                            sw.Close();
+                                                            LOG.imprimeLog(System.DateTime.Now + " === Arquivo bpj: " + sb.ToString());
+
+                                                            /*if (System.IO.File.Exists(imageDir + "\\execok.exe.txt"))
+                                                            {
+                                                                DeleteFile(imageDir + "\\execok.exe.txt");
+                                                            }*/
+
+                                                            bool bOk = false;
+                                                            System.Diagnostics.Process proc = new System.Diagnostics.Process();
+                                                            proc.StartInfo.FileName = dwfCommand;
+                                                            proc.StartInfo.Arguments = /*"\"" +*/ ItemFile + ".bpj" /*+ "\""*/;
+                                                            proc.StartInfo.UseShellExecute = false;
+                                                            proc.StartInfo.RedirectStandardOutput = false;
+                                                            LOG.imprimeLog(System.DateTime.Now + " ==== Vai converter=" + dwfCommand + " " + proc.StartInfo.Arguments);
+                                                            proc.Start();
+                                                            proc.WaitForExit(60000);
+                                                            if (!proc.HasExited)
+                                                            {
+                                                                LOG.imprimeLog(System.DateTime.Now + " ====== ERRO executando DesignReview, tentando fechar");
+                                                                proc.Kill();
+                                                            }
+                                                            else
+                                                            {
+                                                                // Espera a imagem começar a ser gerada pelo driver.
+                                                                for (int i = 0; i < 30; i++)
+                                                                {
+                                                                    LOG.imprimeLog(System.DateTime.Now + " ====== Aguardando inicio da impressao: " + i);
+                                                                    if (HasPrintJobs(printerName))
+                                                                    {
+                                                                        i = 30;
+                                                                        bOk = true;
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        String[] files = Directory.GetFiles(imageDir);
+                                                                        if (files != null && files.Length > 0)
+                                                                        {
+                                                                            LOG.imprimeLog(System.DateTime.Now + " ====== Nao achou impressao, mas achou arquivos");
+                                                                            for (int j = 0; j < files.Length; j++)
+                                                                            {
+                                                                                if (files[j].ToLower().EndsWith(".jpg"))
+                                                                                {
+                                                                                    j = files.Length;
+                                                                                    bOk = true;
+                                                                                    i = 30;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            System.Threading.Thread.Sleep(1000);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            if (!bOk)
+                                                            {
+                                                                throw new Exception("Nao conseguiu iniciar a impressao para gerar os JPG");
+                                                            }
+
+                                                            // Espera a imagem terminar de ser gerada pelo driver
+                                                            LOG.imprimeLog(System.DateTime.Now + " ===== Diretorio para salvar imagens: " + imageDir);
+                                                            bOk = false;
                                                             for (int i = 0; i < 30; i++)
                                                             {
-                                                                LOG.imprimeLog(System.DateTime.Now + " ====== Aguardando inicio da impressao: " + i);
-                                                                if (HasPrintJobs(printerName))
+                                                                LOG.imprimeLog(System.DateTime.Now + " ====== Aguardando término da impressao: " + i);
+                                                                if (!HasPrintJobs(printerName))
                                                                 {
                                                                     i = 30;
                                                                     bOk = true;
                                                                 }
                                                                 else
                                                                 {
-                                                                    String[] files = Directory.GetFiles(imageDir);
-                                                                    if (files != null && files.Length > 0)
-                                                                    {
-                                                                        LOG.imprimeLog(System.DateTime.Now + " ====== Nao achou impressao, mas achou arquivos");
-                                                                        for (int j = 0; j < files.Length; j++)
-                                                                        {
-                                                                            if (files[j].ToLower().EndsWith(".jpg"))
-                                                                            {
-                                                                                j = files.Length;
-                                                                                bOk = true;
-                                                                                i = 30;
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        System.Threading.Thread.Sleep(1000);
-                                                                    }
+                                                                    System.Threading.Thread.Sleep(1000);
+                                                                }
+                                                            }
+                                                            if (!bOk)
+                                                            {
+                                                                throw new Exception("Nao conseguiu concluir a impressao para gerar os JPG");
+                                                            }
+                                                            LOG.imprimeLog(System.DateTime.Now + " ==== Converteu");
+
+                                                            ren = true;
+                                                        }
+                                                    }
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    LOG.imprimeLog(System.DateTime.Now + " =========== Error extraindo arquivos=" + ex.Message);
+                                                    if (isReconvert(nomeImagem))
+                                                    {
+                                                        sendMail("ERRO RECONVERTENDO desenho: " + nomeImagem, ex.Message);
+                                                    }
+                                                    else
+                                                    {
+                                                        addReconvert(nomeImagem);
+                                                        sendMail("ERRO convertendo desenho: " + nomeImagem, ex.Message);
+                                                    }
+                                                    continue;
+                                                }
+                                            }
+                                            else if (ItemFile.ToLower().EndsWith(".pdf"))
+                                            {
+                                                if (converter)
+                                                {
+                                                    LOG.imprimeLog(System.DateTime.Now + " =========== Vai converter um PDF. Comando: " + pdfCommand);
+                                                    System.Diagnostics.Process proc = new System.Diagnostics.Process();
+                                                    proc.StartInfo.FileName = pdfCommand;
+                                                    proc.StartInfo.Arguments = "--dest=\"" + imageDir + "\" --format=1 --src=\"" + ItemFile + "\"";
+                                                    proc.StartInfo.UseShellExecute = false;
+                                                    proc.StartInfo.RedirectStandardOutput = false;
+                                                    LOG.imprimeLog(System.DateTime.Now + " =========== Iniciando conversao do PDF: " + proc.StartInfo.Arguments);
+                                                    proc.Start();
+                                                    proc.WaitForExit();
+                                                    LOG.imprimeLog(System.DateTime.Now + " =========== PDF convertido");
+                                                    int cont = 0;
+                                                    String[] files = Directory.GetFiles(imageDir);
+                                                    if (files != null && files.Length > 0)
+                                                    {
+                                                        foreach (string f in files)
+                                                        {
+                                                            if (f.EndsWith(".jpg"))
+                                                            {
+                                                                cont++;
+                                                                if (lDesenv)
+                                                                {
+                                                                    SetProperty(fileProps, "" + cont, "DES=" + cont);
+                                                                }
+                                                                else if (lPreset)
+                                                                {
+                                                                    SetProperty(fileProps, "" + cont, "PS=" + cont);
+                                                                }
+                                                                else
+                                                                {
+                                                                    SetProperty(fileProps, "" + cont, "OP=" + cont);
                                                                 }
                                                             }
                                                         }
-                                                        if (!bOk)
-                                                        {
-                                                            throw new Exception("Nao conseguiu iniciar a impressao para gerar os JPG");
-                                                        }
-
-                                                        // Espera a imagem terminar de ser gerada pelo driver
-                                                        LOG.imprimeLog(System.DateTime.Now + " ===== Diretorio para salvar imagens: " + imageDir);
-                                                        bOk = false;
-                                                        for (int i = 0; i < 30; i++)
-                                                        {
-                                                            LOG.imprimeLog(System.DateTime.Now + " ====== Aguardando término da impressao: " + i);
-                                                            if (!HasPrintJobs(printerName))
-                                                            {
-                                                                i = 30;
-                                                                bOk = true;
-                                                            }
-                                                            else
-                                                            {
-                                                                System.Threading.Thread.Sleep(1000);
-                                                            }
-                                                        }
-                                                        if (!bOk)
-                                                        {
-                                                            throw new Exception("Nao conseguiu concluir a impressao para gerar os JPG");
-                                                        }
-                                                        LOG.imprimeLog(System.DateTime.Now + " ==== Converteu");
-
-                                                        ren = true;
                                                     }
+
+                                                    ren = true;
                                                 }
                                             }
-                                            catch (Exception ex)
+                                            else
                                             {
-                                                LOG.imprimeLog(System.DateTime.Now + " =========== Error extraindo arquivos=" + ex.Message);
-                                                if (isReconvert(nomeImagem))
-                                                {
-                                                    sendMail("ERRO RECONVERTENDO desenho: " + nomeImagem, ex.Message);
-                                                }
-                                                else
-                                                {
-                                                    addReconvert(nomeImagem);
-                                                    sendMail("ERRO convertendo desenho: " + nomeImagem, ex.Message);
-                                                }
-                                                continue;
+                                                LOG.imprimeLog(System.DateTime.Now + " ======= ERRO: " + ItemFile + " NAO ESTA EM UM FORMATO CONHECIDO");
                                             }
                                         }
-                                        else if (ItemFile.ToLower().EndsWith(".pdf"))
-                                        {
-                                            if (converter)
-                                            {
-                                                LOG.imprimeLog(System.DateTime.Now + " =========== Vai converter um PDF. Comando: " + pdfCommand);
-                                                System.Diagnostics.Process proc = new System.Diagnostics.Process();
-                                                proc.StartInfo.FileName = pdfCommand;
-                                                proc.StartInfo.Arguments = "--dest=\"" + imageDir + "\" --format=1 --src=\"" + ItemFile + "\"";
-                                                proc.StartInfo.UseShellExecute = false;
-                                                proc.StartInfo.RedirectStandardOutput = false;
-                                                LOG.imprimeLog(System.DateTime.Now + " =========== Iniciando conversao do PDF: " + proc.StartInfo.Arguments);
-                                                proc.Start();
-                                                proc.WaitForExit();
-                                                LOG.imprimeLog(System.DateTime.Now + " =========== PDF convertido");
-                                                int cont = 0;
-                                                String[] files = Directory.GetFiles(imageDir);
-                                                if (files != null && files.Length > 0)
-                                                {
-                                                    foreach (string f in files)
-                                                    {
-                                                        if (f.EndsWith(".jpg"))
-                                                        {
-                                                            cont++;
-                                                            if (lDesenv)
-                                                            {
-                                                                SetProperty(fileProps, "" + cont, "DES=" + cont);
-                                                            }
-                                                            else if (lPreset)
-                                                            {
-                                                                SetProperty(fileProps, "" + cont, "PS=" + cont);
-                                                            }
-                                                            else
-                                                            {
-                                                                SetProperty(fileProps, "" + cont, "OP=" + cont);
-                                                            }
-                                                        }
-                                                    }
-                                                }
 
-                                                ren = true;
-                                            }
+                                        if (single && ItemFile.ToLower().EndsWith(".dwf") && download && alterou)
+                                        {
+                                            BatchConvertItem it = new BatchConvertItem();
+                                            it.ItemFile = ItemFile;
+                                            it.file = file;
+                                            it.fileDown = fileDown;
+                                            it.fileLog = DeCodigoLog;
+                                            it.props = fileProps;
+                                            it.imageDir = imageDir;
+                                            it.ItemDir = ItemDir;
+                                            it.DeCodigo = DeCodigo;
+                                            batchList.Add(it);
                                         }
                                         else
                                         {
-                                            LOG.imprimeLog(System.DateTime.Now + " ======= ERRO: " + ItemFile + " NAO ESTA EM UM FORMATO CONHECIDO");
-                                        }
-                                    }
-
-                                    if (single && ItemFile.ToLower().EndsWith(".dwf") && download && alterou)
-                                    {
-                                        BatchConvertItem it = new BatchConvertItem();
-                                        it.ItemFile = ItemFile;
-                                        it.file = file;
-                                        it.fileDown = fileDown;
-                                        it.fileLog = DeCodigoLog;
-                                        it.props = fileProps;
-                                        it.imageDir = imageDir;
-                                        it.ItemDir = ItemDir;
-                                        it.DeCodigo = DeCodigo;
-                                        batchList.Add(it);
-                                    }
-                                    else
-                                    {
-                                        if (ecmEnabled && download && alterou)
-                                        {
-                                            ecm.deleteECMDocument(DeCodigo);
-                                        }
-                                        if (alterou || file.CheckedOut)
-                                        {
-                                            LOG.imprimeLog(System.DateTime.Now + " ==== Vai gerar o log do desenho (1)=" + DeCodigoLog);
-                                            showInfo(file, fileDown, DeCodigoLog, fileProps);
-                                            if (ecmEnabled)
+                                            if (ecmEnabled && download && alterou)
                                             {
-                                                LOG.imprimeLog(System.DateTime.Now + " ==== Vai fazer upload para o ECM");
-                                                ecm.updateECMDocument(DeCodigo, DeCodigoLog);
+                                                ecm.deleteECMDocument(DeCodigo);
                                             }
+                                            if (alterou || file.CheckedOut)
+                                            {
+                                                LOG.imprimeLog(System.DateTime.Now + " ==== Vai gerar o log do desenho (1)=" + DeCodigoLog);
+                                                showInfo(file, fileDown, DeCodigoLog, fileProps);
+                                                if (ecmEnabled)
+                                                {
+                                                    LOG.imprimeLog(System.DateTime.Now + " ==== Vai fazer upload para o ECM");
+                                                    ecm.updateECMDocument(DeCodigo, DeCodigoLog);
+                                                }
 
-                                        }
-                                        LOG.imprimeLog(System.DateTime.Now + " ==== download=" + download + ", alterou=" + alterou);
-                                        if (download && alterou)
-                                        {
-                                            LOG.imprimeLog(System.DateTime.Now + " ==== Vai renomear os jpg");
-                                            DeleteRenameFilesFromDir(imageDir, ItemDir, DeCodigo, delFiles, ren /*&& !fileDown.Name.EndsWith(".pdf")*/);
+                                            }
+                                            LOG.imprimeLog(System.DateTime.Now + " ==== download=" + download + ", alterou=" + alterou);
+                                            if (download && alterou)
+                                            {
+                                                LOG.imprimeLog(System.DateTime.Now + " ==== Vai renomear os jpg");
+                                                DeleteRenameFilesFromDir(imageDir, ItemDir, DeCodigo, delFiles, ren /*&& !fileDown.Name.EndsWith(".pdf")*/);
+                                            }
                                         }
                                     }
 
@@ -933,14 +982,18 @@ namespace vaultsrv
                 erro = true;
                 sendMail("ERRO convertendo desenhos", ex.Message);
             }
-            if (!erro)
+            if (!erro && !lAudit)
             {
                 LOG.imprimeLog(System.DateTime.Now + " Vai salvar arquivo de configuracao=" + downdir + "vaultsrv.conf");
                 WritePropertyFile(downdir + "vaultsrv.conf", config);
             }
-            if (reconvertNew != null)
+            if (reconvertNew != null && !lAudit)
             {
                 WritePropertyFile("reconvert.conf", reconvertNew);
+            }
+            if (lAudit)
+            {
+                WriteAuditLog(auditFile);
             }
 
             //Console.WriteLine("Fim --------------------------------------");
@@ -1813,6 +1866,25 @@ namespace vaultsrv
             SR.Close();
 
             return d;
+        }
+
+        static void WriteAuditLog(string filename)
+        {
+            StreamWriter SW;
+            SW = System.IO.File.CreateText(filename);
+            SW.WriteLine("Item\tcheckinDate\tcheckedOut\tfluigCheckinDate\tfluigCheckedOut\tmessage");
+
+            foreach (AuditItem it in audits)
+            {
+                SW.WriteLine(it.item
+                    + "\t" + it.checkinDate
+                    + "\t" + it.checkedOut
+                    + "\t" + it.fluigCheckinDate
+                    + "\t" + it.fluigCheckedOut
+                    + "\t" + it.message);
+            }
+
+            SW.Close();
         }
 
         static void WritePropertyFile(string filename, Dictionary<string, string> d)
