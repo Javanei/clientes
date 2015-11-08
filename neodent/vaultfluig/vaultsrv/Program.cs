@@ -332,6 +332,11 @@ namespace vaultsrv
                 }
             }
 
+            if (lAudit)
+            {
+                LOG.imprimeLog(System.DateTime.Now + " === WARN: Modo de auditoria");
+            }
+
             string auditDir = downdir + "audit";
             if (lAudit && !Directory.Exists(auditDir))
             {
@@ -423,6 +428,7 @@ namespace vaultsrv
 
                             if (fl != null && fl.Count > 0)
                             {
+                                LOG.imprimeLog(System.DateTime.Now + " ==== Arquivos .idw: " + fl.Count);
                                 foreach (ADSK.File file in fl)
                                 {
                                     if (file.Name.EndsWith(".idw"))
@@ -439,6 +445,7 @@ namespace vaultsrv
                             fl = findByMatches(documentService, ".dwg");
                             if (fl != null && fl.Count > 0)
                             {
+                                LOG.imprimeLog(System.DateTime.Now + " ==== Arquivos .dwg: " + fl.Count);
                                 foreach (ADSK.File file in fl)
                                 {
                                     if (file.Name.EndsWith(".pdf"))
@@ -455,6 +462,7 @@ namespace vaultsrv
                             fl = findByMatches(documentService, ".pdf");
                             if (fl != null && fl.Count > 0)
                             {
+                                LOG.imprimeLog(System.DateTime.Now + " ==== Arquivos .pdf: " + fl.Count);
                                 foreach (ADSK.File file in fl)
                                 {
                                     if (file.Name.EndsWith(".pdf"))
@@ -468,7 +476,7 @@ namespace vaultsrv
                                     }
                                 }
                             }
-                            fileList = null;
+                            //fileList = null;
                         }
                         else if (checkInDate != null)
                         {
@@ -538,6 +546,7 @@ namespace vaultsrv
 
                         if (fileList != null && fileList.Count > 0)
                         {
+                            LOG.imprimeLog(System.DateTime.Now + " ====== Desenhos encontrados: " + fileList.Count);
                             foreach (ADSK.File file in fileList)
                             {
                                 string nomeImagem = file.Name;
@@ -623,6 +632,7 @@ namespace vaultsrv
 
                                     if (lAudit)
                                     {
+                                        LOG.imprimeLog(System.DateTime.Now + " ==== Modo auditoria");
                                         AuditItem auditIt = new AuditItem();
                                         auditIt.item = DeCodigo;
                                         auditIt.checkinDate = file.CkInDate != null ? file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss") : "NULL";
@@ -993,8 +1003,10 @@ namespace vaultsrv
             }
             if (lAudit)
             {
+                LOG.imprimeLog(System.DateTime.Now + " Vai salvar arquivo de auditoria");
                 WriteAuditLog(auditFile);
             }
+            LOG.imprimeLog(System.DateTime.Now + " Fim --------------------------------------");
 
             //Console.WriteLine("Fim --------------------------------------");
             //Console.Write("Pressione enter para terminar");
