@@ -647,6 +647,18 @@ namespace vaultsrv
                                                 Dictionary<string, string> d = ReadPropertyFile(DeCodigoLog);
                                                 auditIt.fluigCheckinDate = GetProperty(d, "CkInDate");
                                                 auditIt.fluigCheckedOut = GetProperty(d, "CheckedOut");
+                                                if (!auditIt.checkinDate.Equals(auditIt.fluigCheckinDate))
+                                                {
+                                                    auditIt.message = "Data de checkin diferente";
+                                                }
+                                                else if (!auditIt.checkedOut.Equals(auditIt.fluigCheckedOut))
+                                                {
+                                                    auditIt.message = "Status checkout diferente";
+                                                }
+                                                else
+                                                {
+                                                    auditIt.message = "OK";
+                                                }
                                                 DeleteFile(DeCodigoLog);
                                             }
                                             else
