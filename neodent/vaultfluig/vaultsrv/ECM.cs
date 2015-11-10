@@ -153,6 +153,7 @@ namespace vaultsrv
                     fs.Write(b, 0, b.Length);
                     fs.Flush();
                     fs.Close();
+                    fs.Dispose();
                     result = true;
                 }
             }
@@ -198,6 +199,7 @@ namespace vaultsrv
                             fs.Write(b, 0, b.Length);
                             fs.Flush();
                             fs.Close();
+                            fs.Dispose();
                         } else {
                             LOG.imprimeLog(System.DateTime.Now + " ====== Outro arquivo Fluig: " + files[i].documentType + " -> " + files[i].phisicalFile);
                         }
@@ -221,6 +223,8 @@ namespace vaultsrv
             FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             byte[] filebytes = new byte[fs.Length];
             fs.Read(filebytes, 0, Convert.ToInt32(fs.Length));
+            fs.Close();
+            fs.Dispose();
 
             //string base64String = System.Convert.ToBase64String(filebytes, 0, filebytes.Length);
             //System.Text.UTF8Encoding UTF8 = new System.Text.UTF8Encoding();

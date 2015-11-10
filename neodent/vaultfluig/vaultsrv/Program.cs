@@ -4,7 +4,8 @@ using System.Text;
 using System.IO;
 using Ionic.Zip;
 using System.Xml;
-
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 using System.Management;
 
 using Microsoft.Web.Services3;
@@ -697,6 +698,7 @@ namespace vaultsrv
                                                             sw.Write(sb.ToString());
                                                             sw.Flush();
                                                             sw.Close();
+                                                            sw.Dispose();
                                                             LOG.imprimeLog(System.DateTime.Now + " === Arquivo bpj: " + sb.ToString());
 
                                                             /*if (System.IO.File.Exists(imageDir + "\\execok.exe.txt"))
@@ -711,8 +713,32 @@ namespace vaultsrv
                                                             proc.StartInfo.UseShellExecute = false;
                                                             proc.StartInfo.RedirectStandardOutput = false;
                                                             LOG.imprimeLog(System.DateTime.Now + " ==== Vai converter=" + dwfCommand + " " + proc.StartInfo.Arguments);
-                                                            proc.Start();
+                                                            Exception exception = null;
+                                                            for (int i = 0; i < 3; i++)
+                                                            {
+                                                                try
+                                                                {
+                                                                    proc.Start();
+                                                                    exception = null;
+                                                                }
+                                                                catch (Exception ex)
+                                                                {
+                                                                    LOG.imprimeLog(System.DateTime.Now + " ========= Nao conseguiu executar o Design Review: " + ex.Message);
+                                                                    exception = ex;
+                                                                    if (i < 2)
+                                                                    {
+                                                                        System.Threading.Thread.Sleep(2000);
+                                                                        LOG.imprimeLog(System.DateTime.Now + " ========= Esperando 2 segundos antes de tentar novamente");
+                                                                    }
+                                                                }
+                                                            }
+                                                            if (exception != null)
+                                                            {
+                                                                throw exception;
+                                                            }
+                                                            LOG.imprimeLog(System.DateTime.Now + " ====== Iniciou processo de conversao");
                                                             proc.WaitForExit(60000);
+                                                            LOG.imprimeLog(System.DateTime.Now + " ====== Expirou os 60000 ms");
                                                             if (!proc.HasExited)
                                                             {
                                                                 LOG.imprimeLog(System.DateTime.Now + " ====== ERRO executando DesignReview, tentando fechar");
@@ -762,7 +788,7 @@ namespace vaultsrv
                                                             bOk = false;
                                                             for (int i = 0; i < 30; i++)
                                                             {
-                                                                LOG.imprimeLog(System.DateTime.Now + " ====== Aguardando término da impressao: " + i);
+                                                                LOG.imprimeLog(System.DateTime.Now + " ====== Aguardando termino da impressao: " + i);
                                                                 if (!HasPrintJobs(printerName))
                                                                 {
                                                                     i = 30;
@@ -786,6 +812,10 @@ namespace vaultsrv
                                                 catch (Exception ex)
                                                 {
                                                     LOG.imprimeLog(System.DateTime.Now + " =========== Error extraindo arquivos=" + ex.Message);
+                                                    for (int i = 0; i < ex.StackTrace.Length; i++)
+                                                    {
+                                                        LOG.imprimeLog("StackTrace: " + ex.StackTrace);
+                                                    }
                                                     if (isReconvert(nomeImagem))
                                                     {
                                                         sendMail("ERRO RECONVERTENDO desenho: " + nomeImagem, ex.Message);
@@ -931,6 +961,7 @@ namespace vaultsrv
                                 sw.Write(sb.ToString());
                                 sw.Flush();
                                 sw.Close();
+                                sw.Dispose();
                                 LOG.imprimeLog(System.DateTime.Now + " === Arquivo bpj: " + sb.ToString());
 
                                 /*if (System.IO.File.Exists(imageDir + "\\execok.exe.txt"))
@@ -1465,6 +1496,7 @@ namespace vaultsrv
                 stream.Write(fileData, 0, fileData.Length);
                 stream.Flush();
                 stream.Close();
+                stream.Dispose();
             }
         }
 
@@ -1735,6 +1767,7 @@ namespace vaultsrv
         {
             //Console.WriteLine("0=False=Extract");
             SetProperty(d, "0", "False=Extract");
+            LOG.imprimeLog(System.DateTime.Now + " ============= Vai extrair o manifext.xml");
             using (ZipFile zip1 = ZipFile.Read(fileName))
             {
                 foreach (ZipEntry e in zip1)
@@ -1745,7 +1778,9 @@ namespace vaultsrv
                         e.Extract(dir, ExtractExistingFileAction.OverwriteSilently);
                     }
                 }
+                zip1.Dispose();
             }
+            LOG.imprimeLog(System.DateTime.Now + " ============= Extraiu o manifext.xml");
             d = parseXml(dir + "\\manifest.xml", d);
             return d;
         }
@@ -1755,6 +1790,7 @@ namespace vaultsrv
          */
         private static Dictionary<string, string> parseXml(String fileName, Dictionary<string, string> d)
         {
+            LOG.imprimeLog(System.DateTime.Now + " ================= Vai fazer o parser do arquivo: " + fileName);
             SetProperty(d, "0", "False=parseXml");
             int sheetNum = 0;
             XmlTextReader reader = new XmlTextReader(fileName);
@@ -1818,6 +1854,8 @@ namespace vaultsrv
                     }
                 }
             }
+            reader.Close();
+            LOG.imprimeLog(System.DateTime.Now + " ================= Fez o parser do arquivo: " + fileName);
             return d;
         }
 
