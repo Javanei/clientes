@@ -346,6 +346,7 @@ namespace vaultsrv
                 LOG.imprimeLog(System.DateTime.Now + " ==== Criou diretorio=" + auditDir);
             }
             string auditFile = auditDir + "\\audit.csv";
+            string auditBat = auditDir + "\\auditconv.bat";
 
             //ADSK.SecurityService ss = null;
             try
@@ -648,13 +649,12 @@ namespace vaultsrv
                                                 Dictionary<string, string> d = ReadPropertyFile(DeCodigoLog);
                                                 auditIt.fluigCheckinDate = GetProperty(d, "CkInDate");
                                                 auditIt.fluigCheckedOut = GetProperty(d, "CheckedOut");
-                                                if (!auditIt.checkinDate.Equals(auditIt.fluigCheckinDate))
-                                                {
-                                                    auditIt.message = "Data de checkin diferente";
-                                                }
-                                                else if (!auditIt.checkedOut.Equals(auditIt.fluigCheckedOut))
+                                                if (!auditIt.checkedOut.Equals(auditIt.fluigCheckedOut))
                                                 {
                                                     auditIt.message = "Status checkout diferente";
+                                                } else if (!auditIt.checkinDate.Equals(auditIt.fluigCheckinDate))
+                                                {
+                                                    auditIt.message = "Data de checkin diferente";
                                                 }
                                                 else
                                                 {
@@ -664,7 +664,7 @@ namespace vaultsrv
                                             }
                                             else
                                             {
-                                                auditIt.message = "Não achou o arquivo de LOG no fluig";
+                                                auditIt.message = "Nao achou o arquivo de LOG no fluig";
                                             }
                                         }
                                         catch (Exception exDown)
@@ -1048,6 +1048,7 @@ namespace vaultsrv
             {
                 LOG.imprimeLog(System.DateTime.Now + " Vai salvar arquivo de auditoria");
                 WriteAuditLog(auditFile);
+                WriteAuditBat(auditBat);
             }
             LOG.imprimeLog(System.DateTime.Now + " Fim --------------------------------------");
 
@@ -1944,6 +1945,38 @@ namespace vaultsrv
                     + "\t" + it.fluigCheckinDate
                     + "\t" + it.fluigCheckedOut
                     + "\t" + it.message);
+            }
+
+            SW.Close();
+        }
+
+        static void WriteAuditBat(string filename)
+        {
+            StreamWriter SW;
+            SW = System.IO.File.CreateText(filename);
+
+            foreach (AuditItem it in audits)
+            {
+                if (!it.message.Equals("OK"))
+                {
+                    SW.WriteLine("vaultsrv.exe -ecmdeljpg -ecmlogin \"" + ecmLogin + "\""
+                        + " -ecmuser \"" + ecmUser + "\""
+                        + " -ecmpassword \"" + ecmPassword + "\""
+                        + " -ecmurl \"" + ecmURL + "\""
+                        + " -ecmcompany " + ecmCompany
+                        + " -ecmrootfolder \"" + ecmRootFolder + "\""
+                        + " -u \"" + user + "\""
+                        + " -p \"" + pass + "\""
+                        + " -h \"" + server + "\""
+                        + " -d \"" + downdir.Substring(0, downdir.Length - 1) + "\""
+                        + " -v " + vault
+                        + " -imgdir \"" + imageDir + "\""
+                        + " -dreview \"" + dwfCommand + "\""
+                        + " -del -cv"
+                        + " \"" + it.item + "\""
+                        + " >> checkin.log"
+                        );
+                }
             }
 
             SW.Close();
