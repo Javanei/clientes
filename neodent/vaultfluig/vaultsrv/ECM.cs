@@ -208,7 +208,6 @@ namespace vaultsrv
                     if (logDestFile == null)
                     {
                         getAll = true;
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 1 - getAll: " + getAll);
                     }
                     else
                     {
@@ -216,46 +215,37 @@ LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 1 - getAll: " + getAll);
                         Dictionary<string, string> logProps = Util.ReadPropertyFile(logDestFile);
                         foreach (KeyValuePair<string, string> pair in logProps)
                         {
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 2 - key:" + pair.Key + " = " + pair.Value);
                             if (pair.Key.ToLower().Equals("checkedout"))
                             {
                                 isCheckedOut = pair.Value.ToLower().Equals("true");
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 3 - isCheckedOut:" + isCheckedOut);
                             }
                             else
                             {
                                 int key = 0;
                                 if (int.TryParse(pair.Key, out key))
                                 {
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 4 - key:" + key);
                                     if (key > 0)
                                     {
                                         string[] ss = pair.Value.Split('=');
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 5 - ss:" + ss[0]);
                                         if (ss[0].ToUpper().Equals("OP") && getop)
                                         {
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 6 - Adicionou: " + key);
                                             fileNumList.Add(key);
                                         }
                                         else if (ss[0].ToUpper().Equals("PS") && getdesenvolvimento)
                                         {
                                             fileNumList.Add(key);
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 7 - Adicionou: " + key);
                                         }
                                         else if (ss[0].ToUpper().Equals("DES") && getdesenvolvimento)
                                         {
                                             fileNumList.Add(key);
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 8 - Adicionou: " + key);
                                         }
                                         else if (ss[0].ToUpper().Equals("ANVISA") && getanvisa)
                                         {
                                             fileNumList.Add(key);
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 9 - Adicionou: " + key);
                                         }
                                         else if (ss[0].ToUpper().Equals("FDA") && getfda)
                                         {
                                             fileNumList.Add(key);
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 10 - Adicionou: " + key);
                                         }
                                     }
                                 }
@@ -272,11 +262,9 @@ LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 10 - Adicionou: " + key);
                     }
 
                     // Agora baixa as imagens
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 11 - " + files.Length + " - getAll=" + getAll);
                     for (int i = 0; i < files.Length; i++)
                     {
                         //LOG.imprimeLog(System.DateTime.Now + " ====== TIPO: " + files[i].documentType);
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 12: " + i + " de " + files.Length + " = " + files[i].phisicalFile + " --> " + files[i].documentType);
                         if (files[i].phisicalFile.EndsWith(".log"))
                             continue;
                         if (files[i].documentType.Equals("2"))
@@ -292,10 +280,8 @@ LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 12: " + i + " de " + files.Le
                                     }
                                 }
                             }
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 13 - baixar: " + baixar);
                             if (baixar)
                             {
-LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 14 - baixando: " + files[i].phisicalFile);
                                 LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo a baixar do Fluig: " + files[i].phisicalFile);
                                 byte[] b = docService.getDocumentContent(ecmLogin, ecmPassword, ecmCompany, files[i].documentId, ecmUser, files[i].version, files[i].phisicalFile);
                                 if (b == null)
