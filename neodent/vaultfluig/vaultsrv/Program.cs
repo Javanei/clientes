@@ -98,6 +98,12 @@ namespace vaultsrv
         List<String> lCheckout = new List<String>();
         // Lista de itens auditados
         static List<AuditItem> audits = new List<AuditItem>();
+        // Filtro de desenhos
+        static bool getop = true;
+        static bool getdesenvolvimento = true;
+        static bool getanvisa = true;
+        static bool getfda = true;
+        static bool getcheckedout = true;
 
         [STAThread]
         static void Main(string[] args)
@@ -120,23 +126,23 @@ namespace vaultsrv
             // Le o arquivo de configuração
             //config = ReadPropertyFile(Directory.GetCurrentDirectory() + "\\vaultsrv.conf");
             LOG.imprimeLog(System.DateTime.Now + " === Vai ler o arquivo de configuracao=" + downdir + "vaultsrv.conf");
-            config = ReadPropertyFile(downdir + "vaultsrv.conf");
+            config = Util.ReadPropertyFile(downdir + "vaultsrv.conf");
             if (config != null)
             {
                 LOG.imprimeLog(System.DateTime.Now + " ============ VAULTSRV.CONF ENCONTRADO");
-                mailPort = GetProperty(config, "mailPort") != null ? System.Convert.ToInt32(GetProperty(config, "mailPort"), 10) : 0;
-                mailHost = GetProperty(config, "mailHost");
-                mailSender = GetProperty(config, "mailSender");
-                mailUser = GetProperty(config, "mailUser");
-                mailPassword = GetProperty(config, "mailPassword");
-                mailTO = GetProperty(config, "mailTO");
-                mailEnableSSL = GetProperty(config, "mailEnableSSL") != null && GetProperty(config, "mailEnableSSL").Equals("true");
+                mailPort = Util.GetProperty(config, "mailPort") != null ? System.Convert.ToInt32(Util.GetProperty(config, "mailPort"), 10) : 0;
+                mailHost = Util.GetProperty(config, "mailHost");
+                mailSender = Util.GetProperty(config, "mailSender");
+                mailUser = Util.GetProperty(config, "mailUser");
+                mailPassword = Util.GetProperty(config, "mailPassword");
+                mailTO = Util.GetProperty(config, "mailTO");
+                mailEnableSSL = Util.GetProperty(config, "mailEnableSSL") != null && Util.GetProperty(config, "mailEnableSSL").Equals("true");
             }
 
             // Le arquivo com as imagens que apresentaram erro na conversao.
-            reconvert = ReadPropertyFile("reconvert.conf");
+            reconvert = Util.ReadPropertyFile("reconvert.conf");
 
-            SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
+            Util.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
 
             // Parse dos parametros
             if (args.Length > 0)
@@ -264,13 +270,13 @@ namespace vaultsrv
                                                                                                     }
                                                                                                     else
                                                                                                     {
-                                                                                                        checkInDate = GetProperty(config, "LastCheckInDate");
+                                                                                                        checkInDate = Util.GetProperty(config, "LastCheckInDate");
                                                                                                         if (checkInDate == null || checkInDate == "")
                                                                                                         {
                                                                                                             checkInDate = new DateTime(1980 /*agora.Year*/, 1 /*agora.Month*/, 1 /*agora.Day*/, 0 /*agora.Hour*/, 0 /*agora.Minute*/, 0 /*agora.Second*/, 0 /*agora.Millisecond*/).ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss");
                                                                                                         }
                                                                                                     }
-                                                                                                    SetProperty(config, "LastCheckInDate", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
+                                                                                                    Util.SetProperty(config, "LastCheckInDate", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
                                                                                                 }
                                                                                                 else
                                                                                                     if (args[i].Equals("-cv"))
@@ -311,9 +317,34 @@ namespace vaultsrv
                                                                                                                             listall = true;
                                                                                                                         }
                                                                                                                         else
-                                                                                                                        {
-                                                                                                                            item = args[i];
-                                                                                                                        }
+                                                                                                                            if (args[i].Equals("-getdesenvolvimento") && i < (args.Length - 1))
+                                                                                                                            {
+                                                                                                                                getdesenvolvimento = args[++i].ToLower().Equals("true");
+                                                                                                                            }
+                                                                                                                            else
+                                                                                                                                if (args[i].Equals("-getanvisa") && i < (args.Length - 1))
+                                                                                                                                {
+                                                                                                                                    getanvisa = args[++i].ToLower().Equals("true");
+                                                                                                                                }
+                                                                                                                                else
+                                                                                                                                    if (args[i].Equals("-getfda") && i < (args.Length - 1))
+                                                                                                                                    {
+                                                                                                                                        getfda = args[++i].ToLower().Equals("true");
+                                                                                                                                    }
+                                                                                                                                    else
+                                                                                                                                        if (args[i].Equals("-getop") && i < (args.Length - 1))
+                                                                                                                                        {
+                                                                                                                                            getop = args[++i].ToLower().Equals("true");
+                                                                                                                                        }
+                                                                                                                                        else
+                                                                                                                                            if (args[i].Equals("-getcheckedout") && i < (args.Length - 1))
+                                                                                                                                            {
+                                                                                                                                                getcheckedout = args[++i].ToLower().Equals("true");
+                                                                                                                                            }
+                                                                                                                                            else
+                                                                                                                                            {
+                                                                                                                                                item = args[i];
+                                                                                                                                            }
                 }
             }
 
@@ -371,7 +402,12 @@ namespace vaultsrv
                 if (ecmDownload)
                 {
                     LOG.imprimeLog(System.DateTime.Now + " ==== Deve baixar do ECM");
-
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar OP........: " + getop);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar DES.......: " + getdesenvolvimento);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar ANVISA....: " + getanvisa);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar FDA.......: " + getfda);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar CheckedOut: " + getcheckedout);
+                    
                     try
                     {
                         string DeCodigo = item.Replace(' ', '_');
@@ -381,7 +417,7 @@ namespace vaultsrv
                         DeleteFilesFromDir(ItemDir);
                         LOG.imprimeLog(System.DateTime.Now + " ==== Limpou diretorio=" + ItemDir);
                         LOG.imprimeLog(System.DateTime.Now + " ==== Vai baixar os desenhos do ECM");
-                        fileProps = ecm.downloadECMDocuments(DeCodigo, ItemDir, fileProps);
+                        fileProps = ecm.downloadECMDocuments(DeCodigo, ItemDir, fileProps, getop, getdesenvolvimento, getanvisa, getfda, getcheckedout);
                     }
                     catch (Exception ex)
                     {
@@ -615,13 +651,13 @@ namespace vaultsrv
                                     }
                                     else
                                     {
-                                        Dictionary<string, string> d = ReadPropertyFile(DeCodigoLog);
-                                        if (GetProperty(d, "CkInDate") == null
-                                            || !GetProperty(d, "CkInDate").Equals(file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"))
-                                            || GetProperty(d, "Cksum") == null
-                                            || !GetProperty(d, "Cksum").Equals(file.Cksum.ToString())
-                                            || GetProperty(d, "FileSize") == null
-                                            || !GetProperty(d, "FileSize").Equals(file.FileSize.ToString())
+                                        Dictionary<string, string> d = Util.ReadPropertyFile(DeCodigoLog);
+                                        if (Util.GetProperty(d, "CkInDate") == null
+                                            || !Util.GetProperty(d, "CkInDate").Equals(file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"))
+                                            || Util.GetProperty(d, "Cksum") == null
+                                            || !Util.GetProperty(d, "Cksum").Equals(file.Cksum.ToString())
+                                            || Util.GetProperty(d, "FileSize") == null
+                                            || !Util.GetProperty(d, "FileSize").Equals(file.FileSize.ToString())
                                             )
                                         {
                                             alterou = true;
@@ -646,9 +682,9 @@ namespace vaultsrv
                                             if (ecm.downloadItemLog(DeCodigo, auditDir))
                                             {
                                                 DeCodigoLog = auditDir + "\\" + DeCodigo + ".log";
-                                                Dictionary<string, string> d = ReadPropertyFile(DeCodigoLog);
-                                                auditIt.fluigCheckinDate = GetProperty(d, "CkInDate");
-                                                auditIt.fluigCheckedOut = GetProperty(d, "CheckedOut");
+                                                Dictionary<string, string> d = Util.ReadPropertyFile(DeCodigoLog);
+                                                auditIt.fluigCheckinDate = Util.GetProperty(d, "CkInDate");
+                                                auditIt.fluigCheckedOut = Util.GetProperty(d, "CheckedOut");
                                                 if (!auditIt.checkedOut.Equals(auditIt.fluigCheckedOut))
                                                 {
                                                     auditIt.message = "Status checkout diferente";
@@ -853,15 +889,15 @@ namespace vaultsrv
                                                                 cont++;
                                                                 if (lDesenv)
                                                                 {
-                                                                    SetProperty(fileProps, "" + cont, "DES=" + cont);
+                                                                    Util.SetProperty(fileProps, "" + cont, "DES=" + cont);
                                                                 }
                                                                 else if (lPreset)
                                                                 {
-                                                                    SetProperty(fileProps, "" + cont, "PS=" + cont);
+                                                                    Util.SetProperty(fileProps, "" + cont, "PS=" + cont);
                                                                 }
                                                                 else
                                                                 {
-                                                                    SetProperty(fileProps, "" + cont, "OP=" + cont);
+                                                                    Util.SetProperty(fileProps, "" + cont, "OP=" + cont);
                                                                 }
                                                             }
                                                         }
@@ -1038,11 +1074,11 @@ namespace vaultsrv
             if (!erro && !lAudit)
             {
                 LOG.imprimeLog(System.DateTime.Now + " Vai salvar arquivo de configuracao=" + downdir + "vaultsrv.conf");
-                WritePropertyFile(downdir + "vaultsrv.conf", config);
+                Util.WritePropertyFile(downdir + "vaultsrv.conf", config);
             }
             if (reconvertNew != null && !lAudit)
             {
-                WritePropertyFile("reconvert.conf", reconvertNew);
+                Util.WritePropertyFile("reconvert.conf", reconvertNew);
             }
             if (lAudit)
             {
@@ -1065,18 +1101,18 @@ namespace vaultsrv
         private static void showInfo(ADSK.File file, ADSK.File fileDown, String filename, Dictionary<string, string> props)
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
-            SetProperty(d, "File", fileDown.Name);
-            SetProperty(d, "CheckedOut", file.CheckedOut.ToString());
-            SetProperty(d, "CkInDate", file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"));
-            SetProperty(d, "Cksum", file.Cksum.ToString());
+            Util.SetProperty(d, "File", fileDown.Name);
+            Util.SetProperty(d, "CheckedOut", file.CheckedOut.ToString());
+            Util.SetProperty(d, "CkInDate", file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"));
+            Util.SetProperty(d, "Cksum", file.Cksum.ToString());
             //SetProperty(d, "Cloaked", file.Cloaked.ToString());
-            SetProperty(d, "FileSize", file.FileSize.ToString());
-            SetProperty(d, "FileStatus", file.FileStatus.ToString());
-            SetProperty(d, "ModDate", file.ModDate.ToString());
-            SetProperty(d, "CkOutFolderId", file.CkOutFolderId.ToString());
-            SetProperty(d, "CkOutMach", file.CkOutMach);
-            SetProperty(d, "CkOutSpec", file.CkOutSpec);
-            SetProperty(d, "CkOutUserId", file.CkOutUserId.ToString());
+            Util.SetProperty(d, "FileSize", file.FileSize.ToString());
+            Util.SetProperty(d, "FileStatus", file.FileStatus.ToString());
+            Util.SetProperty(d, "ModDate", file.ModDate.ToString());
+            Util.SetProperty(d, "CkOutFolderId", file.CkOutFolderId.ToString());
+            Util.SetProperty(d, "CkOutMach", file.CkOutMach);
+            Util.SetProperty(d, "CkOutSpec", file.CkOutSpec);
+            Util.SetProperty(d, "CkOutUserId", file.CkOutUserId.ToString());
             //SetProperty(d, "IsOnSite", file.IsOnSite.ToString());
             //SetProperty(d, "FileRev", file.FileRev.Label + "=" + file.FileRev.MaxFileId + "=" + file.FileRev.MaxRevId + "=" + file.FileRev.Order + "=" + file.FileRev.RevDefId + "=" + file.FileRev.RevId);
 
@@ -1084,10 +1120,10 @@ namespace vaultsrv
             foreach (string k in props.Keys)
             {
                 props.TryGetValue(k, out value);
-                SetProperty(d, k, value);
+                Util.SetProperty(d, k, value);
             }
             LOG.imprimeLog(System.DateTime.Now + " ===== Salvando arquivo de log: " + filename);
-            WritePropertyFile(filename, d);
+            Util.WritePropertyFile(filename, d);
         }
 
         public static List<ADSK.File> findByCheckinDate(DocumentService documentService, String checkinDate)
@@ -1767,7 +1803,7 @@ namespace vaultsrv
         private static Dictionary<string, string> extract(String dir, String fileName, Dictionary<string, string> d)
         {
             //Console.WriteLine("0=False=Extract");
-            SetProperty(d, "0", "False=Extract");
+            Util.SetProperty(d, "0", "False=Extract");
             LOG.imprimeLog(System.DateTime.Now + " ============= Vai extrair o manifext.xml");
             using (ZipFile zip1 = ZipFile.Read(fileName))
             {
@@ -1792,7 +1828,7 @@ namespace vaultsrv
         private static Dictionary<string, string> parseXml(String fileName, Dictionary<string, string> d)
         {
             LOG.imprimeLog(System.DateTime.Now + " ================= Vai fazer o parser do arquivo: " + fileName);
-            SetProperty(d, "0", "False=parseXml");
+            Util.SetProperty(d, "0", "False=parseXml");
             int sheetNum = 0;
             XmlTextReader reader = new XmlTextReader(fileName);
             while (reader.Read())
@@ -1848,7 +1884,7 @@ namespace vaultsrv
                                 if (sheetName != null)
                                 {
                                     //Console.WriteLine(sheetNum + "=" + (sheetName != null) + "=" + sheetName);
-                                    SetProperty(d, "" + sheetNum, sheetPrefix + "=" + sheetName);
+                                    Util.SetProperty(d, "" + sheetNum, sheetPrefix + "=" + sheetName);
                                 }
                             }
                             break;
@@ -1903,34 +1939,6 @@ namespace vaultsrv
             return sb.ToString();
         }*/
 
-        static Dictionary<string, string> ReadPropertyFile(string filename)
-        {
-            Dictionary<string, string> d = new Dictionary<string, string>();
-
-            if (!System.IO.File.Exists(filename))
-            {
-                return d;
-            }
-
-            StreamReader SR;
-            string S;
-            SR = System.IO.File.OpenText(filename);
-            S = SR.ReadLine();
-            while (S != null)
-            {
-                if (S.IndexOf('=') > 0)
-                {
-                    String key = S.Substring(0, S.IndexOf('='));
-                    String value = S.Substring(S.IndexOf('=') + 1);
-                    d.Add(key, value);
-                }
-                S = SR.ReadLine();
-            }
-            SR.Close();
-
-            return d;
-        }
-
         static void WriteAuditLog(string filename)
         {
             StreamWriter SW;
@@ -1980,35 +1988,6 @@ namespace vaultsrv
             }
 
             SW.Close();
-        }
-
-        static void WritePropertyFile(string filename, Dictionary<string, string> d)
-        {
-            StreamWriter SW;
-            SW = System.IO.File.CreateText(filename);
-
-            string value = null;
-            foreach (string k in d.Keys)
-            {
-                d.TryGetValue(k, out value);
-                SW.WriteLine(k + "=" + value);
-            }
-
-            SW.Close();
-        }
-
-        static string GetProperty(Dictionary<string, string> d, string key)
-        {
-            string value = null;
-            d.TryGetValue(key, out value);
-            return value;
-        }
-
-        static void SetProperty(Dictionary<string, string> d, string key, string value)
-        {
-            if (d.ContainsKey(key))
-                d.Remove(key);
-            d.Add(key, value);
         }
 
         static string AddFileToBpj(string ItemFile)
@@ -2115,12 +2094,12 @@ namespace vaultsrv
 
         private static void addReconvert(string nome)
         {
-            SetProperty(reconvertNew, nome, "1");
+            Util.SetProperty(reconvertNew, nome, "1");
         }
 
         private static Boolean isReconvert(String nome)
         {
-            return GetProperty(reconvert, nome) != null;
+            return Util.GetProperty(reconvert, nome) != null;
         }
     }
 }

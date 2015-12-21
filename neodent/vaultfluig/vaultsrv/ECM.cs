@@ -163,43 +163,167 @@ namespace vaultsrv
         /**
          * Faz o download dos arquivos de uma pasta do ECM.
          */
-        public Dictionary<string, string> downloadECMDocuments(string itemCode, string baseDir, Dictionary<string, string> fileProps)
+        public Dictionary<string, string> downloadECMDocuments(string itemCode, string baseDir, Dictionary<string, string> fileProps
+            , bool getop, bool getdesenvolvimento, bool getanvisa, bool getfda, bool getcheckedout)
         {
             //ECMFolderService.documentDto folder = getECMChild(itemCode, rootFolder.documentId);
             ECMFolderService.documentDto folder = findECMFolderChild(rootFolder.documentId, itemCode);
             if (folder != null)
             {
                 ECMFolderService.documentDto[] files = getECMChildren(folder.documentId);
-                SetProperty(fileProps, "0", "False=Extract");
+                Util.SetProperty(fileProps, "0", "False=Extract");
                 if (files != null && files.Length > 0)
                 {
+                    string logDestFile = null;
+                    bool getAll = getop && getdesenvolvimento && getanvisa && getfda;
+
+                    // Primeiro, baixa o arquivo .log
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        if (files[i].documentType.Equals("2"))
+                        {
+                            if (files[i].phisicalFile.ToLower().Equals(itemCode.ToLower() + ".log"))
+                            {
+                                LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo a baixar do Fluig: " + files[i].phisicalFile);
+                                byte[] b = docService.getDocumentContent(ecmLogin, ecmPassword, ecmCompany, files[i].documentId, ecmUser, files[i].version, files[i].phisicalFile);
+                                if (b == null)
+                                {
+                                    throw new Exception("Nao conseguiu baixar do Fluig o documento " + files[i].documentId);
+                                }
+                                logDestFile = baseDir + "\\" + files[i].phisicalFile;
+
+                                FileStream fs = new FileStream(logDestFile, FileMode.CreateNew, FileAccess.Write);
+                                fs.Write(b, 0, b.Length);
+                                fs.Flush();
+                                fs.Close();
+                                fs.Dispose();
+                                break;
+                            }
+                        }
+                    }
+
+                    List<int> fileNumList = new List<int>();
+                    bool isCheckedOut = false;
+
+                    if (logDestFile == null)
+                    {
+                        getAll = true;
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 1 - getAll: " + getAll);
+                    }
+                    else
+                    {
+                        // Monta uma lista com os arquivos a serem baixados
+                        Dictionary<string, string> logProps = Util.ReadPropertyFile(logDestFile);
+                        foreach (KeyValuePair<string, string> pair in logProps)
+                        {
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 2 - key:" + pair.Key + " = " + pair.Value);
+                            if (pair.Key.ToLower().Equals("checkedout"))
+                            {
+                                isCheckedOut = pair.Value.ToLower().Equals("true");
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 3 - isCheckedOut:" + isCheckedOut);
+                            }
+                            else
+                            {
+                                int key = 0;
+                                if (int.TryParse(pair.Key, out key))
+                                {
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 4 - key:" + key);
+                                    if (key > 0)
+                                    {
+                                        string[] ss = pair.Value.Split('=');
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 5 - ss:" + ss[0]);
+                                        if (ss[0].ToUpper().Equals("OP") && getop)
+                                        {
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 6 - Adicionou: " + key);
+                                            fileNumList.Add(key);
+                                        }
+                                        else if (ss[0].ToUpper().Equals("PS") && getdesenvolvimento)
+                                        {
+                                            fileNumList.Add(key);
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 7 - Adicionou: " + key);
+                                        }
+                                        else if (ss[0].ToUpper().Equals("DES") && getdesenvolvimento)
+                                        {
+                                            fileNumList.Add(key);
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 8 - Adicionou: " + key);
+                                        }
+                                        else if (ss[0].ToUpper().Equals("ANVISA") && getanvisa)
+                                        {
+                                            fileNumList.Add(key);
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 9 - Adicionou: " + key);
+                                        }
+                                        else if (ss[0].ToUpper().Equals("FDA") && getfda)
+                                        {
+                                            fileNumList.Add(key);
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 10 - Adicionou: " + key);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                    if (isCheckedOut && !getcheckedout)
+                    {
+                        LOG.imprimeLog(System.DateTime.Now + " ====== Nenhum desenho sera baixado pois esta em checkout e nao deve ser baixado estes");
+                        // Desenho esta em checkout e nao esta marcado para baixar os desenhos em checkout, entao ignora.
+                        return fileProps;
+                    }
+
+                    // Agora baixa as imagens
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 11 - " + files.Length + " - getAll=" + getAll);
                     for (int i = 0; i < files.Length; i++)
                     {
                         //LOG.imprimeLog(System.DateTime.Now + " ====== TIPO: " + files[i].documentType);
-                        if (files[i].documentType.Equals("2")) {
-                            LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo a baixar do Fluig: " + files[i].phisicalFile);
-                            byte[] b = docService.getDocumentContent(ecmLogin, ecmPassword, ecmCompany, files[i].documentId, ecmUser, files[i].version, files[i].phisicalFile);
-                            if (b == null)
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 12: " + i + " de " + files.Length + " = " + files[i].phisicalFile + " --> " + files[i].documentType);
+                        if (files[i].phisicalFile.EndsWith(".log"))
+                            continue;
+                        if (files[i].documentType.Equals("2"))
+                        {
+                            bool baixar = getAll;
+                            if (!getAll)
                             {
-                                throw new Exception("Nao conseguiu baixar do Fluig o documento " + files[i].documentId);
-                            }
-                            string destFile = baseDir + "\\" + files[i].phisicalFile;
-
-                            if (files[i].phisicalFile.IndexOf('.') > 0)
-                            {
-                                string s1 = files[i].phisicalFile.Substring(0, files[i].phisicalFile.LastIndexOf('.'));
-                                if (s1.IndexOf('-') > 0)
+                                foreach (int key in fileNumList)
                                 {
-                                    s1 = s1.Substring(s1.LastIndexOf('-') + 1);
-                                    SetProperty(fileProps, s1, "OP");
+                                    if (files[i].phisicalFile.ToLower().Equals(itemCode.ToLower() + "-" + key + ".jpg")) {
+                                        baixar = true;
+                                        break;
+                                    }
                                 }
                             }
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 13 - baixar: " + baixar);
+                            if (baixar)
+                            {
+LOG.imprimeLog("@@@@@@@@@@@ downloadECMDocuments - 14 - baixando: " + files[i].phisicalFile);
+                                LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo a baixar do Fluig: " + files[i].phisicalFile);
+                                byte[] b = docService.getDocumentContent(ecmLogin, ecmPassword, ecmCompany, files[i].documentId, ecmUser, files[i].version, files[i].phisicalFile);
+                                if (b == null)
+                                {
+                                    throw new Exception("Nao conseguiu baixar do Fluig o documento " + files[i].documentId);
+                                }
+                                string destFile = baseDir + "\\" + files[i].phisicalFile;
 
-                            FileStream fs = new FileStream(destFile, FileMode.CreateNew, FileAccess.Write);
-                            fs.Write(b, 0, b.Length);
-                            fs.Flush();
-                            fs.Close();
-                            fs.Dispose();
+                                if (files[i].phisicalFile.IndexOf('.') > 0)
+                                {
+                                    string s1 = files[i].phisicalFile.Substring(0, files[i].phisicalFile.LastIndexOf('.'));
+                                    if (s1.IndexOf('-') > 0)
+                                    {
+                                        s1 = s1.Substring(s1.LastIndexOf('-') + 1);
+                                        Util.SetProperty(fileProps, s1, "OP");
+                                    }
+                                }
+
+                                FileStream fs = new FileStream(destFile, FileMode.CreateNew, FileAccess.Write);
+                                fs.Write(b, 0, b.Length);
+                                fs.Flush();
+                                fs.Close();
+                                fs.Dispose();
+                            }
+                            else
+                            {
+                                LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo do Fluig sendo ignorado: " + files[i].phisicalFile);
+                            }
                         } else {
                             LOG.imprimeLog(System.DateTime.Now + " ====== Outro arquivo Fluig: " + files[i].documentType + " -> " + files[i].phisicalFile);
                         }
@@ -419,12 +543,6 @@ namespace vaultsrv
         {
             ECMFolderService.documentDto[] fdocs = folderService.getChildren(ecmLogin, ecmPassword, ecmCompany, parentId, ecmUser);
             return fdocs;
-        }
-        private void SetProperty(Dictionary<string, string> d, string key, string value)
-        {
-            if (d.ContainsKey(key))
-                d.Remove(key);
-            d.Add(key, value);
         }
 
         private void pause()

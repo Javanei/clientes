@@ -87,6 +87,7 @@
   <ItemGroup>
     <Compile Include="AuditItem.cs" />
     <Compile Include="BatchConvertItem.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="Condition.cs" />
     <Compile Include="ECM.cs" />
     <Compile Include="ErrorHandler.cs" />
