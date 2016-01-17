@@ -2781,6 +2781,11 @@ PROCEDURE pi-load-images:
                 + " -ecmurl ~"":U + tt-pdf-desenhos.ecmURL + "~""
                 + " -ecmcompany ~"":U + STRING(tt-pdf-desenhos.ecmCompany) + "~""
                 + " -ecmrootfolder ~"":U + STRING(tt-pdf-desenhos.ecmRootFolder) + "~""
+                + " -getdes ":U + (IF tt-pdf.desenvolvimento THEN "true" ELSE "false")
+                + " -getanvisa ":U + (IF tt-param.l-anvisa THEN "true" ELSE "false")
+                + " -getfda ":U + (IF tt-param.l-fda THEN "true" ELSE "false")
+                /* + " -getordem ":U + (IF NOT tt-param.l-fda AND NOT tt-param.l-anvisa THEN "true":U ELSE "false":U) */
+                + " -getcheckedout false":U
                 + " -s 2":U
                 /*+ " -cv":U*/
                 + IF NOT l-gera-log THEN " -nolog" ELSE "":U

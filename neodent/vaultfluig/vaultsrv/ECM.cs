@@ -164,7 +164,7 @@ namespace vaultsrv
          * Faz o download dos arquivos de uma pasta do ECM.
          */
         public Dictionary<string, string> downloadECMDocuments(string itemCode, string baseDir, Dictionary<string, string> fileProps
-            , bool getop, bool getdesenvolvimento, bool getanvisa, bool getfda, bool getcheckedout)
+            , bool getordem, bool getdes, bool getanvisa, bool getfda, bool getcheckedout)
         {
             //ECMFolderService.documentDto folder = getECMChild(itemCode, rootFolder.documentId);
             ECMFolderService.documentDto folder = findECMFolderChild(rootFolder.documentId, itemCode);
@@ -175,7 +175,7 @@ namespace vaultsrv
                 if (files != null && files.Length > 0)
                 {
                     string logDestFile = null;
-                    bool getAll = getop && getdesenvolvimento && getanvisa && getfda;
+                    bool getAll = getordem && getdes && getanvisa && getfda;
 
                     // Primeiro, baixa o arquivo .log
                     for (int i = 0; i < files.Length; i++)
@@ -227,15 +227,15 @@ namespace vaultsrv
                                     if (key > 0)
                                     {
                                         string[] ss = pair.Value.Split('=');
-                                        if (ss[0].ToUpper().Equals("OP") && getop)
+                                        if (ss[0].ToUpper().Equals("OP") && getordem)
                                         {
                                             fileNumList.Add(key);
                                         }
-                                        else if (ss[0].ToUpper().Equals("PS") && getdesenvolvimento)
+                                        else if (ss[0].ToUpper().Equals("PS") && getordem)
                                         {
                                             fileNumList.Add(key);
                                         }
-                                        else if (ss[0].ToUpper().Equals("DES") && getdesenvolvimento)
+                                        else if (ss[0].ToUpper().Equals("DES") && getdes)
                                         {
                                             fileNumList.Add(key);
                                         }

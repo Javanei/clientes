@@ -99,8 +99,8 @@ namespace vaultsrv
         // Lista de itens auditados
         static List<AuditItem> audits = new List<AuditItem>();
         // Filtro de desenhos
-        static bool getop = true;
-        static bool getdesenvolvimento = true;
+        static bool getordem = true;
+        static bool getdes = true;
         static bool getanvisa = true;
         static bool getfda = true;
         static bool getcheckedout = true;
@@ -317,29 +317,29 @@ namespace vaultsrv
                                                                                                                             listall = true;
                                                                                                                         }
                                                                                                                         else
-                                                                                                                            if (args[i].Equals("-getdesenvolvimento") && i < (args.Length - 1))
+                                                                                                                            if (args[i].Equals("-getdes") && i < (args.Length - 1))
                                                                                                                             {
-                                                                                                                                getdesenvolvimento = args[++i].ToLower().Equals("true");
+                                                                                                                                getdes = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
                                                                                                                             }
                                                                                                                             else
                                                                                                                                 if (args[i].Equals("-getanvisa") && i < (args.Length - 1))
                                                                                                                                 {
-                                                                                                                                    getanvisa = args[++i].ToLower().Equals("true");
+                                                                                                                                    getanvisa = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
                                                                                                                                 }
                                                                                                                                 else
                                                                                                                                     if (args[i].Equals("-getfda") && i < (args.Length - 1))
                                                                                                                                     {
-                                                                                                                                        getfda = args[++i].ToLower().Equals("true");
+                                                                                                                                        getfda = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
                                                                                                                                     }
                                                                                                                                     else
-                                                                                                                                        if (args[i].Equals("-getop") && i < (args.Length - 1))
+                                                                                                                                        /*if (args[i].Equals("-getordem") && i < (args.Length - 1))
                                                                                                                                         {
-                                                                                                                                            getop = args[++i].ToLower().Equals("true");
+                                                                                                                                            getordem = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
                                                                                                                                         }
-                                                                                                                                        else
+                                                                                                                                        else*/
                                                                                                                                             if (args[i].Equals("-getcheckedout") && i < (args.Length - 1))
                                                                                                                                             {
-                                                                                                                                                getcheckedout = args[++i].ToLower().Equals("true");
+                                                                                                                                                getcheckedout = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
                                                                                                                                             }
                                                                                                                                             else
                                                                                                                                             {
@@ -382,7 +382,10 @@ namespace vaultsrv
             //ADSK.SecurityService ss = null;
             try
             {
-                serviceManager = new WebServiceManager((IWebServiceCredentials)new UserPasswordCredentials(Program.server, Program.vault, Program.user, Program.pass, true));
+                if (!ecmDownload)
+                {
+                    serviceManager = new WebServiceManager((IWebServiceCredentials)new UserPasswordCredentials(Program.server, Program.vault, Program.user, Program.pass, true));
+                }
                 /* Efetua o Login */
                 /*imprimeLog("====== Usuario.: " + user);
                 imprimeLog("====== Senha...: " + pass);
@@ -401,9 +404,13 @@ namespace vaultsrv
 
                 if (ecmDownload)
                 {
+                    if (getanvisa || getfda || getdes)
+                    {
+                        getordem = false;
+                    }
                     LOG.imprimeLog(System.DateTime.Now + " ==== Deve baixar do ECM");
-                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar OP........: " + getop);
-                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar DES.......: " + getdesenvolvimento);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar OP........: " + getordem);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Baixar DES.......: " + getdes);
                     LOG.imprimeLog(System.DateTime.Now + " ==== Baixar ANVISA....: " + getanvisa);
                     LOG.imprimeLog(System.DateTime.Now + " ==== Baixar FDA.......: " + getfda);
                     LOG.imprimeLog(System.DateTime.Now + " ==== Baixar CheckedOut: " + getcheckedout);
@@ -417,7 +424,7 @@ namespace vaultsrv
                         DeleteFilesFromDir(ItemDir);
                         LOG.imprimeLog(System.DateTime.Now + " ==== Limpou diretorio=" + ItemDir);
                         LOG.imprimeLog(System.DateTime.Now + " ==== Vai baixar os desenhos do ECM");
-                        fileProps = ecm.downloadECMDocuments(DeCodigo, ItemDir, fileProps, getop, getdesenvolvimento, getanvisa, getfda, getcheckedout);
+                        fileProps = ecm.downloadECMDocuments(DeCodigo, ItemDir, fileProps, getordem, getdes, getanvisa, getfda, getcheckedout);
                     }
                     catch (Exception ex)
                     {
@@ -1085,6 +1092,10 @@ namespace vaultsrv
                 LOG.imprimeLog(System.DateTime.Now + " Vai salvar arquivo de auditoria");
                 WriteAuditLog(auditFile);
                 WriteAuditBat(auditBat);
+            }
+            if (serviceManager != null)
+            {
+                serviceManager.Dispose();
             }
             LOG.imprimeLog(System.DateTime.Now + " Fim --------------------------------------");
 
