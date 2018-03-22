@@ -27,6 +27,8 @@ def buffer b-op for ord-prod.
 def input parameter raw-param as raw no-undo.
 def input parameter table     for tt-raw-digita.
 
+DEF VAR c-item LIKE  ITEM.it-codigo.
+
 create tt-param.
 raw-transfer raw-param to tt-param.
 
@@ -41,12 +43,15 @@ DEFINE VARIABLE cTmp AS CHARACTER NO-UNDO.
 
 {esp/esvl001.i}
 
+def temp-table tt-op-temp no-undo like operacao.
+
 def temp-table tt-ext-texto-cq no-undo like ext-texto-cq.
 
 def temp-table tt-pdf-desenhos no-undo like ttDesenhoItem
    field nr-pdf       as integer
    field nr-sequencia as integer
    field nr-ord-produ as integer
+   FIELD bloqueado    AS LOGICAL
    index tt1 nr-pdf nr-sequencia ascending.
 
 def temp-table ttDesenhosCarregados no-undo
@@ -83,9 +88,10 @@ def temp-table tt-exames no-undo
    field op-codigo  like oper-ord.op-codigo
    field cod-exame  like oper-exam.cod-exame
    field cod-comp   like comp-exame.cod-comp
+   FIELD classifica AS CHAR
    field rowid-comp as rowid
    index tt1 it-codigo op-codigo cod-exame cod-comp ascending
-   index tt2 cod-comp ascending.
+   index tt2 classifica ascending.
 
 
 /* Para n∆o imprimir o fundo "Desenvolvimento nas p†ginas de inspeá∆o */
@@ -110,6 +116,7 @@ def var ipHeight     as integer no-undo.
 def var iWidth       as integer no-undo.
 def var iHeight      as integer no-undo.
 def var l-em-revisao as logical no-undo.
+
 
 {include/i-rpvar.i} /* Vari†veis para cabeáalho e rodapÇ */
 
@@ -137,6 +144,12 @@ DEF VAR dTempoGasto AS DECIMAL NO-UNDO.
 DEF STREAM sJpg.
 DEF VAR cJpgFileTmp AS CHAR NO-UNDO.
 DEF VAR cFileType AS CHAR NO-UNDO.
+
+DEF VAR oper-padrao  AS INTEG NO-UNDO.
+DEF VAR oper-padrao1 AS INTEG NO-UNDO.
+DEF VAR oper-padrao2 AS INTEG NO-UNDO.
+DEF VAR oper-padrao3 AS INTEG NO-UNDO.
+
 
 run utp/ut-acomp.p persistent set h-acomp.
 
@@ -181,6 +194,7 @@ DO  ON ERROR UNDO, LEAVE
 if not tt-param.l-imp-por-item then do:
 
    for each ord-prod no-lock use-index ch-emite-op where /* Marcilene  em 09/12/2014 - alterado para no-lock, devido ao erro de LOCK na tabela ORD-PROD */
+            ord-prod.emite-ordem   = (not tt-Param.l-reimpressao) and
             ord-prod.cd-planejado >= tt-param.c-planejador-ini and
             ord-prod.cd-planejado <= tt-param.c-planejador-fim and
             ord-prod.nr-ord-produ >= tt-param.i-ordem-ini      and
@@ -191,15 +205,16 @@ if not tt-param.l-imp-por-item then do:
             ord-prod.dt-emissao   >= tt-param.d-emissao-ini    and
             ord-prod.dt-emissao   <= tt-param.d-emissao-fim    and
             ord-prod.dt-inicio    >= tt-param.d-inicio-ini     and
-            ord-prod.dt-inicio    <= tt-param.d-inicio-fim     and
-           (ord-prod.emite-ordem and not tt-Param.l-reimpressao or
-            not ord-prod.emite-ordem and tt-Param.l-reimpressao)
+            ord-prod.dt-inicio    <= tt-param.d-inicio-fim
             by ord-prod.nr-ord-prod:
 
       run pi-acompanhar in h-acomp (input ord-prod.nr-ord-produ).   
 
       if ord-prod.it-codigo < tt-param.c-item-ini or
          ord-prod.it-codigo > tt-param.c-item-fim then next.
+
+      if ord-prod.cod-roteiro < tt-param.c-roteiro-ini or
+         ord-prod.cod-roteiro > tt-param.c-roteiro-fim then next.
 
       IF NOT tt-param.l-somente-desenho THEN DO:
          find first ord-manut where ord-manut.nr-ord-produ = ord-prod.nr-ord-prod no-lock no-error.
@@ -220,7 +235,8 @@ if not tt-param.l-imp-por-item then do:
                 
             release b-op.   
           
-            /*ord-prod.emite-ordem = no.*/
+            /*ord-prod.emite-ordem = 
+            no.*/
          end.
       END.
 
@@ -246,7 +262,11 @@ if not tt-param.l-imp-por-item then do:
          end.
       END.
 
-      IF NOT tt-param.l-somente-desenho THEN DO:
+      IF NOT tt-param.l-somente-desenho and
+         not tt-param.l-so-controle     THEN DO:
+       
+            
+           
           run pi-gera-cabecalho-ordem (input yes).
           run pi-cria-dados ("Observacao: ", 12, 0, "", 0, 0, 0).
           run pi-print-editor (ord-prod.narrativa, 80).
@@ -279,7 +299,9 @@ if not tt-param.l-imp-por-item then do:
 
       ASSIGN l-primeira = yes.
 
-      IF NOT tt-param.l-somente-desenho THEN DO:
+      IF NOT tt-param.l-somente-desenho and
+         not tt-param.l-so-controle     THEN DO:
+
           for each reservas where reservas.nr-ord-pro = ord-prod.nr-ord-prod no-lock,
              first bf-item  where bf-item.it-codigo   = reservas.it-codigo   no-lock:
 
@@ -381,202 +403,218 @@ if not tt-param.l-imp-por-item then do:
       END.
       
       IF NOT tt-param.l-somente-desenho THEN DO:
-          for each oper-ord where oper-ord.emite-ficha                          and
-                                  oper-ord.nr-ord-produ = ord-prod.nr-ord-produ no-lock
-                               by oper-ord.op-codigo:    
-              FIND ext-grup-maquina NO-LOCK
-                  WHERE ext-grup-maquina.gm-codigo = oper-ord.gm-codigo
-                  NO-ERROR.
 
-              run pi-soma-linha (1).
+         if not tt-param.l-so-controle then do:
 
-              find last tt-pdf-dados where tt-pdf-dados.nr-pdf    = tt-pdf.nr-pdf     and
-                                           tt-pdf-dados.nr-pagina = tt-pdf.qt-paginas no-lock no-error.
+            for each oper-ord where oper-ord.emite-ficha                          and
+                                    oper-ord.nr-ord-produ = ord-prod.nr-ord-produ no-lock
+                                 by oper-ord.op-codigo:
 
-              if l-primeira or (available tt-pdf-dados and (tt-pdf-dados.nr-linha + tt-pdf-dados.qt-salto) > 90) then do:
+               if oper-ord.cod-roteiro < tt-param.c-roteiro-ini or
+                  oper-ord.cod-roteiro > tt-param.c-roteiro-fim then next.
 
-                 run pi-cria-dados (" ",                    50, 0, "", 0, 0, 0).
-                 run pi-cria-dados ("ROTEIRO DE PRODUCAO",  19, 1, "", 0, 0, 0).
-                 run pi-cria-dados ("  SEQUENCIA ",         35, 0, "", 8, 0, 0).
-                 run pi-cria-dados ("DENOMINAÄ«O",          49, 0, "", 8, 0, 0).
-                 run pi-cria-dados ("GRUPO MµQUINA ",       20, 1, "", 8, 0, 0).
-                 run pi-cria-dados (fill("-", 122),        122, 3, "", 8, 0, 0).
-
-                 l-primeira = no.
-
-              end.
-
-              cTemp = "*" + string(oper-ord.op-codigo,'999') + "*".
-
-              run pi-cria-dados (" ",   1, 0, "Code39", 20, 0, 0).
-              run pi-cria-dados (cTemp, 0, 0, "Code39", 20, 0, 0).
-
-              run pi-cria-dados (" ",                                  1, 0, "", 8, 0,  0).
-              run pi-cria-dados (string(oper-ord.op-codigo, '>>>9'),   4, 0, "", 8, 0,  0).
-              run pi-cria-dados (substring(oper-ord.descricao, 1, 49), 0, 0, "", 8, 0, 36).
-              run pi-cria-dados (string(oper-ord.gm-codigo, 'X(9)'),   0, 1, "", 8, 0, 85).
-
-              i-linha-aux = 1.
-
-             /*
-             empty temp-table tt-Editor.
-
-             find first ficha-oper of oper-ord no-lock no-error.
-
-             if available ficha-oper then do:
-
-                run pi-print-editor (ficha-oper.desc-linha, 122).
-
-             end.
-
-             for each tt-Editor:
-
-                run pi-cria-dados (tt-Editor.Conteudo, 122, 1, "", 8, 0, 0).
-
-                i-linha-aux = i-linha-aux + 1.
-
-             end.
-             */
-
-             if can-find(first op-ferram where op-ferram.num-id-operacao = oper-ord.num-id-operacao no-lock) then do:
-
-                ASSIGN l-primeira = yes.
-
-                for each op-ferram where op-ferram.num-id-operacao = oper-ord.num-id-operacao no-lock:
-
-                   if l-primeira or (available tt-pdf-dados and (tt-pdf-dados.nr-linha + tt-pdf-dados.qt-salto) > 90) then do:
-
-                      run pi-cria-dados (" ",             8, 0, "", 0, 0, 0).
-                      run pi-cria-dados ("Ferramentas:", 12, 1, "", 0, 0, 0).
-
-                      ASSIGN l-primeira = no.
-
-                      ASSIGN i-linha-aux = i-linha-aux + 1.
-
-                   end.
-
-                   run pi-cria-dados (" ",                  12, 0, "", 0, 0, 0).
-                   run pi-cria-dados (op-ferram.ferramenta, 16, 0, "", 0, 0, 0).
-                   run pi-cria-dados (" - ",                 3, 0, "", 0, 0, 0).
-
-                   find first ferr-prod where ferr-prod.cod-ferr-prod = op-ferram.ferramenta no-lock no-error.
-
-                   if not available ferr-prod then
-
-                      run pi-soma-linha.
-
-                   else do:
-
-                      run pi-cria-dados (ferr-prod.des-ferr-prod, 40, 1, "", 0, 0, 0).
-
-                   end.
-
-                   ASSIGN i-linha-aux = i-linha-aux + 1.
-
-                end.
-
-                run pi-cria-dados (" ", 1, 1, "", 0, 0, 0).
-
-                ASSIGN i-linha-aux = i-linha-aux + 1.
-
-             end.
-
-             /* GRID */
-                          
-             IF AVAIL ext-grup-maquina AND ext-grup-maquina.log-imprime-grid = TRUE THEN DO:
-                 FIND FIRST operacao  no-lock
-                      where operacao.it-codigo = oper-ord.it-codigo
-                        and operacao.op-codigo = oper-ord.op-codigo no-error.
-                       
-                                         
-                 RUN pi-cria-dados ("+----------------------------------------------------+-------------------------------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|                                D I A R I O       D E      B O R D O                      | MAQ:                      |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+----------------------------------------------------+-------------------------------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 
-                 if avail operacao then do:
-                    RUN pi-cria-dados ("| DISPOSITIVO:                          | TMP MAQ UN: " + string(operacao.tempo-maquin,">>9.99") +  "    TMP MAQ TOT: " + 
-                                          string((operacao.tempo-maquin * ord-prod.qt-ordem),">>>>9.99") +  "      | MES                       |", 122, 1, "", 0, 0, 0).
-                 end.
-                 else
-                    RUN pi-cria-dados ("| DISPOSITIVO:                          | TMP MAQ UN: 0" +  "    TMP MAQ TOT: 0"  +  "      | MES                       |", 122, 1, "", 0, 0, 0).
-                 
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|  DATA  | INICIO |  FIM   |   REFUGO   | QUANTIDADE | RETRABALHO | REFUGO   | COLABORADOR | OBSERVACAO                |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        | PREPARAÄ«O | PRODUZIDA  |            | OPERAÄ«O |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("| VERIFICAÄ«O FINAL DO LOTE PARA EVITAR PEÄAS DIFERENTES:                      COLABORADOR:                            |", 122, 1, "", 0, 0, 0).
-                 RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
-
-                 ASSIGN i-linha-aux = 1.
-
-             END.
-
-             do i-cont = i-linha-aux to 6:
+                FIND ext-grup-maquina NO-LOCK
+                    WHERE ext-grup-maquina.gm-codigo = oper-ord.gm-codigo
+                    NO-ERROR.
 
                 run pi-soma-linha (1).
 
-             end.
-          end.
+                find last tt-pdf-dados where tt-pdf-dados.nr-pdf    = tt-pdf.nr-pdf     and
+                                             tt-pdf-dados.nr-pagina = tt-pdf.qt-paginas no-lock no-error.
 
-          if tt-param.l-plano-controle then do:
+                if l-primeira or (available tt-pdf-dados and (tt-pdf-dados.nr-linha + tt-pdf-dados.qt-salto) > 90) then do:
 
-             run pi-consiste-revisao (input  ord-prod.nr-ord-produ,
-                                      input  ord-prod.it-codigo,
-                                      output l-em-revisao).
+                   run pi-cria-dados (" ",                    50, 0, "", 0, 0, 0).
+                   run pi-cria-dados ("ROTEIRO DE PRODUCAO",  19, 1, "", 0, 0, 0).
+                   run pi-cria-dados ("  SEQUENCIA ",         35, 0, "", 8, 0, 0).
+                   run pi-cria-dados ("DENOMINAÄ«O",          49, 0, "", 8, 0, 0).
+                   run pi-cria-dados ("GRUPO MµQUINA ",       20, 1, "", 8, 0, 0).
+                   run pi-cria-dados (fill("-", 122),        122, 3, "", 8, 0, 0).
 
-             if not l-em-revisao then do:
+                   l-primeira = no.
 
-                run pi-gera-cabecalho-inspecao (input yes).
+                end.
 
-                run pi-gera-dados-inspecao.
+                cTemp = "*" + string(oper-ord.op-codigo,'999') + "*".
 
-             end.
+                run pi-cria-dados (" ",   1, 0, "Code39", 20, 0, 0).
+                run pi-cria-dados (cTemp, 0, 0, "Code39", 20, 0, 0).
+
+                run pi-cria-dados (" ",                                  1, 0, "", 8, 0,  0).
+                run pi-cria-dados (string(oper-ord.op-codigo, '>>>9'),   4, 0, "", 8, 0,  0).
+                run pi-cria-dados (substring(oper-ord.descricao, 1, 49), 0, 0, "", 8, 0, 36).
+                run pi-cria-dados (string(oper-ord.gm-codigo, 'X(9)'),   0, 1, "", 8, 0, 85).
+
+                i-linha-aux = 1.
+
+               /*
+               empty temp-table tt-Editor.
+
+               find first ficha-oper of oper-ord no-lock no-error.
+
+               if available ficha-oper then do:
+
+                  run pi-print-editor (ficha-oper.desc-linha, 122).
+
+               end.
+
+               for each tt-Editor:
+
+                  run pi-cria-dados (tt-Editor.Conteudo, 122, 1, "", 8, 0, 0).
+
+                  i-linha-aux = i-linha-aux + 1.
+
+               end.
+               */
+
+               if can-find(first op-ferram where op-ferram.num-id-operacao = oper-ord.num-id-operacao no-lock) then do:
+
+                  ASSIGN l-primeira = yes.
+
+                  for each op-ferram where op-ferram.num-id-operacao = oper-ord.num-id-operacao no-lock:
+
+                     if l-primeira or (available tt-pdf-dados and (tt-pdf-dados.nr-linha + tt-pdf-dados.qt-salto) > 90) then do:
+
+                        run pi-cria-dados (" ",             8, 0, "", 0, 0, 0).
+                        run pi-cria-dados ("Ferramentas:", 12, 1, "", 0, 0, 0).
+
+                        ASSIGN l-primeira = no.
+
+                        ASSIGN i-linha-aux = i-linha-aux + 1.
+
+                     end.
+
+                     run pi-cria-dados (" ",                  12, 0, "", 0, 0, 0).
+                     run pi-cria-dados (op-ferram.ferramenta, 16, 0, "", 0, 0, 0).
+                     run pi-cria-dados (" - ",                 3, 0, "", 0, 0, 0).
+
+                     find first ferr-prod where ferr-prod.cod-ferr-prod = op-ferram.ferramenta no-lock no-error.
+
+                     if not available ferr-prod then
+
+                        run pi-soma-linha.
+
+                     else do:
+
+                        run pi-cria-dados (ferr-prod.des-ferr-prod, 40, 1, "", 0, 0, 0).
+
+                     end.
+
+                     ASSIGN i-linha-aux = i-linha-aux + 1.
+
+                  end.
+
+                  run pi-cria-dados (" ", 1, 1, "", 0, 0, 0).
+
+                  ASSIGN i-linha-aux = i-linha-aux + 1.
+
+               end.
+
+               /* GRID */
+
+               IF AVAIL ext-grup-maquina AND ext-grup-maquina.log-imprime-grid = TRUE THEN DO:
+
+                  find first operacao where operacao.num-id-operacao = oper-ord.num-id-operacao no-lock no-error.
+
+                   RUN pi-cria-dados ("+----------------------------------------------------+-------------------------------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|                                D I A R I O       D E      B O R D O                      | MAQ:                      |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+----------------------------------------------------+-------------------------------------+---------------------------+", 122, 1, "", 0, 0, 0).
+
+                   if avail operacao then do:
+                      RUN pi-cria-dados ("| DISPOSITIVO:                          | TMP MAQ UN: " + string(operacao.tempo-maquin,">>9.99") +  "    TMP MAQ TOT: " + 
+                                            string((operacao.tempo-maquin * ord-prod.qt-ordem),">>>>9.99") +  "      | MES                       |", 122, 1, "", 0, 0, 0).
+                   end.
+                   else
+                      RUN pi-cria-dados ("| DISPOSITIVO:                          | TMP MAQ UN: 0" +  "    TMP MAQ TOT: 0"  +  "      | MES                       |", 122, 1, "", 0, 0, 0).
+
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|  DATA  | INICIO |  FIM   |   REFUGO   | QUANTIDADE | RETRABALHO | REFUGO   | COLABORADOR | OBSERVACAO                |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        | PREPARAÄ«O | PRODUZIDA  |            | OPERAÄ«O |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("|        |        |        |            |            |            |          |             |                           |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("| VERIFICAÄ«O FINAL DO LOTE PARA EVITAR PEÄAS DIFERENTES:                      COLABORADOR:                            |", 122, 1, "", 0, 0, 0).
+                   RUN pi-cria-dados ("+--------+--------+--------+------------+------------+------------+----------+-------------+---------------------------+", 122, 1, "", 0, 0, 0).
+
+                   ASSIGN i-linha-aux = 1.
+
+               END.
+
+               do i-cont = i-linha-aux to 6:
+
+                  run pi-soma-linha (1).
+
+               end.
+            end.
+         end.
+
+         if tt-param.l-plano-controle or tt-param.l-so-controle then do:
+
+            run pi-consiste-revisao (input  ord-prod.nr-ord-produ,
+                                     input  ord-prod.it-codigo,
+                                     output l-em-revisao).
+
+            if not l-em-revisao then do:
+               
+               run pi-gera-cabecalho-inspecao (input yes).
+
+               run pi-gera-dados-inspecao.
+
+            end.
          end.
       end.
+             
+      if not tt-param.l-so-controle then do:
 
-      /* Busca dos desenhos. */
-      RUN esp/esvl002.p (INPUT ord-prod.it-codigo, OUTPUT TABLE ttDesenhoitem).
+         /* Busca dos desenhos. */
+         RUN esp/esvl002.p (INPUT ord-prod.it-codigo, OUTPUT TABLE ttDesenhoitem).
 
-      IF RETURN-VALUE = "OK":U THEN DO:
-         ASSIGN i-nr-sequencia = 0.
+         IF RETURN-VALUE = "OK":U THEN DO:
+            ASSIGN i-nr-sequencia = 0.
 
-         FOR EACH ttDesenhoItem:
-            ASSIGN i-nr-sequencia = i-nr-sequencia + 1.
+            FOR EACH ttDesenhoItem:
+               ASSIGN i-nr-sequencia = i-nr-sequencia + 1.
 
-            create tt-pdf-desenhos.
-            buffer-copy ttDesenhoItem to tt-pdf-desenhos.
-            ASSIGN  tt-pdf-desenhos.nr-pdf       = tt-pdf.nr-pdf
-                    tt-pdf-desenhos.nr-sequencia = i-nr-sequencia
-                    tt-pdf-desenhos.nr-ord-produ = ord-prod.nr-ord-produ
-                    /*tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
-                    tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1*/.
+               create tt-pdf-desenhos.
+               buffer-copy ttDesenhoItem to tt-pdf-desenhos.
+               ASSIGN  tt-pdf-desenhos.nr-pdf       = tt-pdf.nr-pdf
+                       tt-pdf-desenhos.nr-sequencia = i-nr-sequencia
+                       tt-pdf-desenhos.nr-ord-produ = ord-prod.nr-ord-produ
+                       /*tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
+                       tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1*/.
 
+            END.
          END.
+      end.
+      
+      /* Cria hist-ord-prod */
+      IF tt-Param.l-reimpressao THEN DO:
+          RUN pi-cria-hist-ord-prod.
       END.
+
    end.
 end.
 
 if tt-param.l-imp-por-item then do:
+
    for each item where item.it-codigo >= tt-param.c-item-ini and
                        item.it-codigo <= tt-param.c-item-fim no-lock:
 
@@ -596,32 +634,39 @@ if tt-param.l-imp-por-item then do:
       if /*not l-em-revisao               and*/
          not tt-param.l-somente-desenho then do:
 
+          
+         ASSIGN c-item =  ITEM.it-codigo.
+
          run pi-gera-cabecalho-item (input yes).
 
          run pi-gera-dados-item.
 
       end.
 
-      /* Busca dos desenhos. */
-      RUN esp/esvl002.p (INPUT item.it-codigo, OUTPUT TABLE ttDesenhoitem).
+      if not tt-param.l-so-controle then do:
 
-      IF RETURN-VALUE = "OK":U THEN DO:
-         ASSIGN i-nr-sequencia = 0.
+         /* Busca dos desenhos. */
+         RUN esp/esvl002.p (INPUT item.it-codigo, OUTPUT TABLE ttDesenhoitem).
 
-         FOR EACH ttDesenhoItem:
-            ASSIGN i-nr-sequencia = i-nr-sequencia + 1.
+         IF RETURN-VALUE = "OK":U THEN DO:
 
-            create tt-pdf-desenhos.
-            buffer-copy ttDesenhoItem to tt-pdf-desenhos.
-            ASSIGN  tt-pdf-desenhos.nr-pdf       = tt-pdf.nr-pdf
-                    tt-pdf-desenhos.nr-sequencia = i-nr-sequencia
-                    /*tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
-                    tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1*/.
+            ASSIGN i-nr-sequencia = 0.
+
+            FOR EACH ttDesenhoItem:
+
+               ASSIGN i-nr-sequencia = i-nr-sequencia + 1.
+
+               create tt-pdf-desenhos.
+               buffer-copy ttDesenhoItem to tt-pdf-desenhos.
+               ASSIGN  tt-pdf-desenhos.nr-pdf       = tt-pdf.nr-pdf
+                       tt-pdf-desenhos.nr-sequencia = i-nr-sequencia
+                       /*tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
+                       tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1*/.
+            END.
          END.
-      END.
+      end.
    end.
 end.
-
 
 run pi-acompanhar in h-acomp (input "Aguarde, gerando arquivo PDF").   
 
@@ -673,6 +718,7 @@ end.
 empty temp-table ttDesenhosCarregados.
 
 for each tt-pdf no-lock:
+
    run pdf_set_PaperType ("Spdf", "A4").
    run pdf_set_Orientation ("Spdf", "Portrait").
    run pdf_set_LeftMargin ("Spdf", 10).
@@ -792,7 +838,7 @@ for each tt-pdf no-lock:
        */
        run pdf_new_page("Spdf").
    END.
-   ELSE*/ IF tt-pdf.bloqueado THEN DO:
+   ELSE IF tt-pdf.bloqueado THEN DO:
        /*Comentado porque por enquanto n∆o deve mostrar nada.
          Quando pedirem para mostrar, Ç s¢ descomentar!!!
        ASSIGN cDeCodigo = "Bloqueado".
@@ -817,15 +863,21 @@ for each tt-pdf no-lock:
                             pdf_PageHeight("Spdf"), /* Linha de baixo para cima */
                             pdf_PageWidth("Spdf"),  /* Largura */
                             pdf_PageHeight("Spdf")) /* Altura */.
-      */
+       */
    END.
-   ELSE DO:
+   ELSE*/ DO:
+
        if can-find(first tt-pdf-desenhos where tt-pdf-desenhos.nr-pdf = tt-pdf.nr-pdf no-lock) then do:
+
           for each tt-pdf-desenhos where tt-pdf-desenhos.nr-pdf = tt-pdf.nr-pdf no-lock:
+
+             if tt-pdf-desenhos.bloqueado then next.
+
              ASSIGN cDeCodigo = REPLACE(tt-pdf-desenhos.deCodigo, ' ':U, '_').
              ASSIGN cDeCodigo1 = cDeCodigo.
 
              FOR EACH ttDesenhosCarregados WHERE ttDesenhosCarregados.deCodigo MATCHES cDeCodigo1 + "__*":U:
+
                 ASSIGN cDeCodigo = ttDesenhosCarregados.deCodigo.
                 ASSIGN ipWidth  = pdf_PageHeight("Spdf").
                 ASSIGN ipHeight = pdf_PageHeight("Spdf").
@@ -931,11 +983,12 @@ procedure pi-cria-dados:
       assign i-nr-sequencia = 1
              i-nr-linha     = 1.
 
-   if i-nr-linha > 90 then do:
+ if i-nr-linha > 90 then do:
       if tt-pdf.qt-pg-insp = 0 then
          run pi-gera-cabecalho-ordem (input no).
       else do:
          if tt-param.l-imp-por-item then
+
             run pi-gera-cabecalho-item (input no).
          else
             run pi-gera-cabecalho-inspecao (input no).
@@ -966,6 +1019,7 @@ procedure pi-cria-dados:
           tt-pdf-dados.tam-fonte     = i-tam-fonte
           tt-pdf-dados.cor-fonte     = i-cor-fonte.
 end procedure.
+
 
 
 
@@ -1065,29 +1119,56 @@ PROCEDURE pi-gera-cabecalho-inspecao:
       run pi-cria-dados ("Data: ",                                 6, 0, "", 0, 0, 0).
       run pi-cria-dados ((IF NOT tt-pdf.desenvolvimento THEN string(v-dat-ini-validade,"99/99/9999") ELSE "          "), 10, 2, "", 0, 0, 0).
 
-      ASSIGN c-nom-desenho = ""
-             c-rev-desenho = ""
-             c-dat-desenho = ""
-             i-qt-caracter = 0. 
+      ASSIGN i-qt-caracter = 0. 
 
       /*Revis∆o de Desenhos*/
-      for each desenho-item where desenho-item.it-codigo = ord-prod.it-codigo no-lock:
-         for last revisao where revisao.de-codigo = desenho-item.de-codigo no-lock:
-            ASSIGN i-qt-caracter = maximum(10, length(revisao.de-codigo)).
+      for each desenho-item where desenho-item.it-codigo = ord-prod.it-codigo     no-lock,
+          last revisao      where revisao.de-codigo      = desenho-item.de-codigo no-lock:
 
-            ASSIGN c-nom-desenho = "Desenho: " + revisao.de-codigo                          + fill(" ", i-qt-caracter - length(revisao.de-codigo)) + (if c-nom-desenho = "" then "" else " / " + c-nom-desenho)
-                   c-rev-desenho = "Revis∆o: " + (IF NOT tt-pdf.desenvolvimento THEN revisao.rv-codigo ELSE FILL(" ", LENGTH(revisao.rv-codigo))) + fill(" ", i-qt-caracter - length(revisao.rv-codigo)) + (if c-rev-desenho = "" then "" else " / " + c-rev-desenho)
-                   c-dat-desenho = "Data:    " + (IF NOT tt-pdf.desenvolvimento THEN STRING(revisao.data-revisao, "99/99/9999") ELSE "          ") + fill(" ", i-qt-caracter - 10)                        + (if c-dat-desenho = "" then "" else " / " + c-dat-desenho).
-         end.
+          ASSIGN i-qt-caracter = maximum(10, length(revisao.de-codigo)).
+
       end.
 
-      run pi-cria-dados ("Revis∆o de Desenhos: ",  22, 1, defaultFontBoldName, 0, 0, 0).
-      IF NOT tt-pdf.desenvolvimento THEN DO:
-          run pi-cria-dados (c-nom-desenho,           122, 1, "",                  0, 0, 0).
+      IF i-qt-caracter = 0 THEN
+
+          ASSIGN c-nom-desenho = ""
+                 c-rev-desenho = ""
+                 c-dat-desenho = "". 
+
+      ELSE DO:
+
+          ASSIGN c-nom-desenho = ""
+                 c-rev-desenho = ""
+                 c-dat-desenho = "". 
+
+          /*Revis∆o de Desenhos*/
+          for each desenho-item where desenho-item.it-codigo = ord-prod.it-codigo     no-lock,
+              last revisao      where revisao.de-codigo      = desenho-item.de-codigo no-lock:
+
+              ASSIGN c-nom-desenho = revisao.de-codigo                                                                                                         + fill(" ", i-qt-caracter - length(revisao.de-codigo)) + (if c-nom-desenho = "" then "" else " / " + c-nom-desenho)
+                     c-rev-desenho = (IF NOT tt-pdf.desenvolvimento THEN revisao.rv-codigo                          ELSE FILL(" ", LENGTH(revisao.rv-codigo))) + fill(" ", i-qt-caracter - length(revisao.rv-codigo)) + (if c-rev-desenho = "" then "" else " / " + c-rev-desenho)
+                     c-dat-desenho = (IF NOT tt-pdf.desenvolvimento THEN STRING(revisao.data-revisao, "99/99/9999") ELSE "          ")                         + fill(" ", i-qt-caracter - 10)                        + (if c-dat-desenho = "" then "" else " / " + c-dat-desenho).
+
+          end.
+
+          ASSIGN c-nom-desenho = "Desenho: " + c-nom-desenho
+                 c-rev-desenho = "Revis∆o: " + c-rev-desenho
+                 c-dat-desenho = "Data:    " + c-dat-desenho.
+
       END.
+
+      run pi-cria-dados ("Revis∆o de Desenhos: ",  22, 1, defaultFontBoldName, 0, 0, 0).
+
+      IF NOT tt-pdf.desenvolvimento THEN DO:
+
+          run pi-cria-dados (c-nom-desenho,       122, 1, "",                  0, 0, 0).
+
+      END.
+
       run pi-cria-dados (c-rev-desenho,           122, 1, "",                  0, 0, 0).
       run pi-cria-dados (c-dat-desenho,           122, 1, "",                  0, 0, 0).
       run pi-cria-dados (fill("-", 122),            0, 1, "",                  0, 0, 0).
+
    end.
    
    /*Dados da Operaá∆o - In°cio*/
@@ -1117,6 +1198,7 @@ END PROCEDURE.
 
 
 procedure pi-gera-dados-inspecao:
+
    def var i-qtd-linha-max       as integer       no-undo.
    def var i-qtd-cada            as integer       no-undo.   
    def var c-freq                as char          no-undo.
@@ -1139,6 +1221,9 @@ procedure pi-gera-dados-inspecao:
    for each oper-ord where oper-ord.nr-ord-produ = ord-prod.nr-ord-produ no-lock
                   break by(oper-ord.nr-ord-produ):
                   
+      if oper-ord.cod-roteiro < tt-param.c-roteiro-ini or
+         oper-ord.cod-roteiro > tt-param.c-roteiro-fim then next.
+
        FIND ext-grup-maquina NO-LOCK
            WHERE ext-grup-maquina.gm-codigo = oper-ord.gm-codigo  NO-ERROR.
            
@@ -1146,6 +1231,7 @@ procedure pi-gera-dados-inspecao:
                           input        oper-ord.it-codigo,
                           input        oper-ord.cod-roteiro,
                           input        oper-ord.op-codigo,
+                          INPUT        ord-prod.qt-ordem,
                           output TABLE tt-exames).
 
        run pi-soma-linha (1).
@@ -1163,11 +1249,12 @@ procedure pi-gera-dados-inspecao:
     
        ASSIGN i-qtd-linha-max = 1.
        
-       for each tt-exames by tt-exames.cod-comp:
+       for each tt-exames by tt-exames.classifica:
+
           assign c-reg   = ""
                  c-reg-2 = "".
               
-          find first comp-exame where rowid(comp-exame) = rowid-comp no-lock no-error.
+          find first comp-exame where rowid(comp-exame) = tt-exames.rowid-comp no-lock no-error.
 
           find first ext-exame where ext-exame.cod-exame = tt-exames.cod-exame no-lock no-error.          
           
@@ -1179,13 +1266,11 @@ procedure pi-gera-dados-inspecao:
                 assign c-reg   = "1/" + string(ext-exame.qtd-um-cada)
                        c-reg-2 = string(ext-exame.qtd-um-cada).
     
-/*           if c-reg = "" then do: /*Amostragem*/*/
-
              find first exame where exame.cod-exame = comp-exame.cod-exame no-lock no-error.                
     
              if c-reg = "" or (avail exame and exame.amostragem) then do: /*Amostragem*/
              
-                find first item where item.it-codigo = oper-ord.it-codigo no-lock no-error.
+                find first bf-item where bf-item.it-codigo = oper-ord.it-codigo no-lock no-error.
                 
                 find first esp-nivel-insp no-lock
                      where esp-nivel-insp.cod-exame = comp-exame.cod-exame
@@ -1208,8 +1293,8 @@ procedure pi-gera-dados-inspecao:
                       assign c-reg = "Erro2".
                 end.
                 else do:
-                    if available item then do:
-                       find first nivel-insp where nivel-insp.nivel     = item.nivel                 and 
+                    if available bf-item then do:
+                       find first nivel-insp where nivel-insp.nivel     = bf-item.nivel                 and 
                                                    nivel-insp.tam-lote >= integer(ord-prod.qt-ordem) no-lock no-error.
                              
                        if available nivel-insp then do:
@@ -1249,10 +1334,7 @@ procedure pi-gera-dados-inspecao:
              end.
           end.  
           
-          /*if exame.amostragem then*/
-             assign c-freq = c-reg.        
-          /*else
-             assign c-freq  = "".*/
+          assign c-freq = c-reg.        
           
           if avail ext-exame and ext-exame.cd-texto <> "" then
              c-reg   = ext-exame.cd-texto.
@@ -1274,8 +1356,6 @@ procedure pi-gera-dados-inspecao:
                 else
                    assign i-qtd-cada = ord-prod.qt-ordem / integer(c-freq).                
          
-             .ASSIGN i-qtd-linha  = truncate(tt-param.i-qte / i-qtd-cada, 0) + (if ((tt-param.i-qte / i-qtd-linha) - truncate(ord-prod.qt-ordem / i-qtd-linha, 0)) > 0 then 1 else 0).                         
-             
              if i-qtd-cada <= 6 then
                 ASSIGN i-qtd-linha  = 1.
              else
@@ -1283,11 +1363,9 @@ procedure pi-gera-dados-inspecao:
                   
              if i-qtd-linha * 6 < i-qtd-cada then
                 assign i-qtd-linha = i-qtd-linha + 1.
-           end.             
-          
-          .if comp-exame.cod-exame = 10168 and comp-exame.cod-comp = 90 then
-             message comp-exame.cod-comp i-qtd-linha i-qtd-linha-max view-as alert-box.
 
+          end.             
+          
           if i-qtd-linha > i-qtd-linha-max then
              assign i-qtd-linha-max = i-qtd-linha. 
 
@@ -1301,18 +1379,11 @@ procedure pi-gera-dados-inspecao:
     
           ASSIGN c-cod-comp = string(tt-exames.cod-comp).
           
-          if substring(c-des-freq-med,1,10) = ""  or (avail exame and exame.amostragem) /*or (avail ext-exame and ext-exame.log-um-cada)*/ then
-             assign c-des-freq-med-aux = c-reg-2. /*amostra.tam-amostra*/
+          if substring(c-des-freq-med,1,10) = ""  or (avail exame and exame.amostragem) then
+             assign c-des-freq-med-aux = c-reg-2.
           else
-             assign c-des-freq-med-aux = /*if index(c-des-freq-med, "/") > 0 then "" else*/ substring(c-des-freq-med,1,10).
+             assign c-des-freq-med-aux = substring(c-des-freq-med,1,10).
 
-          .if index(c-des-freq-med-aux, "/") > 0 then
-             assign i-qtd-linha = 1.
-             
-             .if tt-exames.cod-comp = 30 and tt-exames.cod-exame = 10156 then
-                message avail ext-comp-exame skip c-des-freq-med-aux skip
-                        c-des-freq-med view-as alert-box.
-             
           RUN quebrar-texto (INPUT comp-exame.descricao,
                              INPUT 25,
                              OUTPUT c-descricao).
@@ -1327,14 +1398,14 @@ procedure pi-gera-dados-inspecao:
                              string(c-descricao[1],"x(25)") + 
                              " |" + 
                              string(c-meio-controle[1],"x(15)") + 
-                             "" + 
-                             string(substring(c-des-freq-med-aux,1,7),"x(7)") + 
-                             "   " +
+                             " " + 
+                             string(substring(c-des-freq-med-aux,1,10),"x(10)") +   /*  Marcio   string(substring(c-des-freq-med-aux,1,7),"x(7)") +    */
+                             " __" +
                              /*
                              Solicitado em 19/01/2015 pelo Rodrigo Freitas, para que fique em coment†rio atÇ entrar em vigor a nova SM
                              string(c-freq,"x(06)") + " " +                           
                              */
-                             string(" ", "x(06)") + " " +
+                             string("______", "x(06)") + " " +
                              string(c-reg,"x(03)") + 
                              " ______ ______ ______ ______ ______ ______".
     
@@ -1353,12 +1424,9 @@ procedure pi-gera-dados-inspecao:
              assign v-linha-1-aux = "".
     
           assign v-linha-aux = "                                                                   " +
-                               "    ______ ______ ______ ______ ______ ______".
+                               "        ______ ______ ______ ______ ______ ______".
     
           assign i-aux = 1.
-          
-          .if comp-exame.cod-exame = 10156 then
-             message 900 v-linha-1-aux i-qtd-linha i-qtd-linha-max view-as alert-box.
           
           do while i-aux <= i-qtd-linha:
              if i-aux = 1 then do:
@@ -1369,7 +1437,7 @@ procedure pi-gera-dados-inspecao:
                    run pi-cria-dados (v-linha-1-aux, 68, 0, "", 8, 0, 0).
 
                    if i-qtd-linha > 1 then do:
-                      run pi-cria-dados ("    ______ ______ ______ ______ ______ ______",45, 1, "", 8, 0, 0).
+                      run pi-cria-dados ("       ______ ______ ______ ______ ______ ______",48, 1, "", 8, 0, 0).
                       assign i-aux = i-aux + 1.
                    end.
 
@@ -1395,33 +1463,95 @@ procedure pi-gera-dados-inspecao:
        end.
 
        if can-find(first tt-exames) then do:
+           
+          FIND FIRST operacao WHERE operacao.op-codigo = oper-ord.op-codigo NO-LOCK NO-ERROR.
+      
+          ASSIGN oper-padrao = operacao.nr-oper-pad. 
+
+          IF oper-ord.num-id-operacao = 0  AND oper-ord.descricao = 'USINAGEM - TORNO CNC' THEN ASSIGN oper-padrao = 1.
+         
+          run pi-soma-linha (2).
+        
+          IF oper-padrao = 1  THEN DO:
+
+             run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                             Responsavel liberacao Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+
+          END. 
+          ELSE DO:
+
+             run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                             Responsavel liberacao Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+
+          END.
+
+
           run pi-soma-linha (2).
 
-          run pi-cria-dados ("                                                       Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                          Respons†vel Liberaá∆o Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                                               Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                                               Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Produá∆o:  Qte. Aprovado:_______________          Qte. Rejeito Comum:_______________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("Operaá∆o: Isento de material de outro lote     ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Plano de controle: Apontamento e preenchimento ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Produto: Identificaá∆o e armazenamento         ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("Qualidade:", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Atributo:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Vari†vel:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("Outros:                          Qte. Rejeito Comum:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("( )Aprovado ( )Reprovado ( )N/A     Nr. RO:__________     Data:__________     Matr°cula:__________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (1).
 
           run pi-cria-dados (fill("Ó", 122), 122, 0, "", 0, 0, 0).
 
        end.
 
        if last-of (oper-ord.nr-ord-produ) then do:
+
           run buscar-exames (input        oper-ord.nr-ord-produ,
                              input        oper-ord.it-codigo,
                              input        oper-ord.cod-roteiro,
                              input        0,
+                             INPUT        ord-prod.qt-ordem,
                              output TABLE tt-exames).
 
           if can-find(first tt-exames) then do:
+
              run pi-soma-linha (1).
              run pi-cria-dados ("Caracter°sticas Controladas do Item", 35, 1, "", 0, 0, 0).
              run pi-cria-dados (fill("Ó", 122), 122, 1, "", 0, 0, 0).
+
           end.
     
           ASSIGN i-qtd-linha-max = 1.
        
-          for each tt-exames by tt-exames.cod-comp:
+          for each tt-exames by tt-exames.classifica:
           
              find first comp-exame where rowid(comp-exame) = tt-exames.rowid-comp no-lock no-error.
                     
@@ -1440,9 +1570,9 @@ procedure pi-gera-dados-inspecao:
                           
                 find first exame where exame.cod-exame = comp-exame.cod-exame no-lock no-error.                  
     
-                if c-reg = "" or (avail exame and exame.amostrage) then do: /*Amostragem*/
+                if c-reg = "" or (avail exame and exame.amostragem) then do: /*Amostragem*/
                 
-                   find first item where item.it-codigo = oper-ord.it-codigo no-lock no-error.
+                   find first bf-item where bf-item.it-codigo = oper-ord.it-codigo no-lock no-error.
                    
                    find first esp-nivel-insp no-lock
                         where esp-nivel-insp.cod-exame = comp-exame.cod-exame
@@ -1466,9 +1596,9 @@ procedure pi-gera-dados-inspecao:
                    end.
                    else do:
                    
-                      if available item then do:
+                      if available bf-item then do:
                          find first nivel-insp no-lock
-                              where nivel-insp.nivel     = item.nivel
+                              where nivel-insp.nivel     = bf-item.nivel
                                 and nivel-insp.tam-lote >= integer(ord-prod.qt-ordem) no-error.
                          if available nivel-insp then do:
                             find first amostra where amostra.tipo-plano  = 2                      and 
@@ -1511,10 +1641,10 @@ procedure pi-gera-dados-inspecao:
              else
                 c-reg = "".
                 
-              if c-reg-2 = "" then do:
-                 assign i-qtd-linha = 1.
-              end.
-              else do:
+             if c-reg-2 = "" then do:
+                assign i-qtd-linha = 1.
+             end.
+             else do:
                 if index(c-reg-2, "/") > 0 then 
                    assign i-qtd-linha = ord-prod.qt-ordem / integer(substring(c-reg-2,3)).
                 else
@@ -1522,42 +1652,8 @@ procedure pi-gera-dados-inspecao:
              
                 ASSIGN i-qtd-linha = truncate(ord-prod.qt-ordem / i-qtd-linha, 0) + (if ((ord-prod.qt-ordem / i-qtd-linha) - truncate(ord-prod.qt-ordem / i-qtd-linha, 0)) > 0 then 1 else 0).             
           
-            /* if i-qtd-linha <= 7 then
-                  ASSIGN i-qtd-linha  = 1.
-               else
-                  ASSIGN i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).*/
-            end.
-    
-            /* if c-reg-2 = "" then do:
-          
-                if v-log-char then
-             
-                   assign i-qtd-linha = 1.
-                 
-                else do:
-                 
-                   i-qtd-linha = truncate(decimal(c-reg), 0) + (if (decimal(c-reg) - truncate(decimal(c-reg), 0)) > 0 then 1 else 0).
-                 
-                   if i-qtd-linha <= 7 then
-                      i-qtd-linha  = 1.
-                   else
-                      i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).
-             
-                end.
              end.
-             else do:
-          
-                i-qtd-linha = integer(substring(c-reg,3)).
-             
-                i-qtd-linha = truncate(ord-prod.qt-ordem / i-qtd-linha, 0) + (if ((ord-prod.qt-ordem / i-qtd-linha) - truncate(ord-prod.qt-ordem / i-qtd-linha, 0)) > 0 then 1 else 0).
-             
-                if i-qtd-linha <= 7 then
-                   i-qtd-linha  = 1.
-                else
-                   i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).
-             
-             end. */
-
+    
              if i-qtd-linha > i-qtd-linha-max then
                 assign i-qtd-linha-max = i-qtd-linha.
     
@@ -1595,7 +1691,7 @@ procedure pi-gera-dados-inspecao:
                                 " " + 
                                 string(substring(c-des-freq-med-aux,1,10),"x(10)") + 
                                 " " +
-                                string(c-reg,"x(05)") +                                 
+                                string(c-reg,"x(07)") +                                 
                                 "______ ______ ______ ______ ______ ______ ______"
                                 .
     
@@ -1670,12 +1766,68 @@ procedure pi-gera-dados-inspecao:
 
          if can-find(first tt-exames) then do:
 
-            run pi-soma-linha (2).
+            FIND FIRST operacao NO-LOCK WHERE operacao.op-codigo = oper-ord.op-codigo NO-ERROR.
+      
+            ASSIGN oper-padrao1 = operacao.nr-oper-pad. 
+
+            IF oper-ord.num-id-operacao = 0  AND oper-ord.descricao = 'USINAGEM - TORNO CNC' THEN ASSIGN oper-padrao1 = 1.
+               
+            RUN pi-soma-linha (2).
        
-            run pi-cria-dados ("                                                     Operador Nro:   ______ ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-            run pi-cria-dados ("                                        Respons†vel Liberaá∆o Nro:   ______ ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-            run pi-cria-dados ("                                                             Data:   ______ ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-            run pi-cria-dados ("                                                             Hora:   ______ ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+            IF oper-padrao1 = 1  THEN DO:
+
+               run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               RUN pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                             Responsavel liberacao Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               RUN pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               RUN pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               RUN pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+
+            END. 
+            ELSE DO:
+            
+               run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                             Responsavel liberacao Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+               run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+          
+            END.
+
+            run pi-soma-linha (2).
+
+            run pi-cria-dados ("Produá∆o:  Qte. Aprovado:_______________          Qte. Rejeito Comum:_______________", 118, 2, "", 8, 0, 0).
+
+            run pi-soma-linha (2).
+
+            run pi-cria-dados ("Operaá∆o: Isento de material de outro lote     ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+            run pi-cria-dados ("Plano de controle: Apontamento e preenchimento ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+            run pi-cria-dados ("Produto: Identificaá∆o e armazenamento         ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+            run pi-soma-linha (2).
+
+            run pi-cria-dados ("Qualidade:", 118, 2, "", 8, 0, 0).
+            run pi-cria-dados ("Atributo:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+            run pi-cria-dados ("Vari†vel:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+            run pi-soma-linha (2).
+
+            run pi-cria-dados ("Outros:                          Qte. Rejeito Comum:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+            run pi-soma-linha (2).
+
+            run pi-cria-dados ("( )Aprovado ( )Reprovado ( )N/A     Nr. RO:__________     Data:__________     Matr°cula:__________", 118, 2, "", 8, 0, 0).
+
+            run pi-soma-linha (1).
 
             run pi-cria-dados (fill("Ó", 122), 122, 0, "", 8, 0, 0).
 
@@ -1738,6 +1890,8 @@ PROCEDURE pi-gera-cabecalho-item:
    CREATE tt-not-desenvolvimento.
    ASSIGN nr-pagina = tt-pdf.qt-paginas.
 
+  
+
    run pi-cria-dados (c-empresa,                                        85, 1, "",                   0, 0, 0).
    run pi-cria-dados (c-Programa + " - " + c-versao + "." + c-revisao,  40, 1, "",                   0, 0, 0).
    run pi-cria-dados (" ",                                              40, 0, "",                   0, 0, 0).
@@ -1782,24 +1936,43 @@ PROCEDURE pi-gera-cabecalho-item:
       run pi-cria-dados ("Data: ",                                 6, 0, "", 0, 0, 0).
       run pi-cria-dados ((IF NOT tt-pdf.desenvolvimento THEN string(v-dat-ini-validade,"99/99/9999") ELSE "          "), 10, 2, "", 0, 0, 0).
 
-      c-nom-desenho = "".
-      c-rev-desenho = "".
-      c-dat-desenho = "".
-      i-qt-caracter = 0. 
+      ASSIGN i-qt-caracter = 0. 
 
       /*Revis∆o de Desenhos*/
-      for each desenho-item where desenho-item.it-codigo = item.it-codigo no-lock:
+      for each desenho-item where desenho-item.it-codigo = item.it-codigo         no-lock,
+          last revisao      where revisao.de-codigo      = desenho-item.de-codigo no-lock:
 
-         for last revisao where revisao.de-codigo = desenho-item.de-codigo no-lock:
+          ASSIGN i-qt-caracter = maximum(10, length(revisao.de-codigo)).
 
-            i-qt-caracter = maximum(10, length(revisao.de-codigo)).
-
-            c-nom-desenho = "Desenho: " + revisao.de-codigo                          + fill(" ", i-qt-caracter - length(revisao.de-codigo)) + (if c-nom-desenho = "" then "" else " / " + c-nom-desenho).
-            c-rev-desenho = "Revis∆o: " + (IF NOT tt-pdf.desenvolvimento THEN revisao.rv-codigo ELSE " ") + fill(" ", i-qt-caracter - length(revisao.rv-codigo)) + (if c-rev-desenho = "" then "" else " / " + c-rev-desenho).
-            c-dat-desenho = "Data:    " + (IF NOT tt-pdf.desenvolvimento THEN string(revisao.data-revisao, "99/99/9999") ELSE "          ") + fill(" ", i-qt-caracter - 10)                        + (if c-dat-desenho = "" then "" else " / " + c-dat-desenho).
-
-         end.
       end.
+
+      IF i-qt-caracter = 0 THEN
+
+          ASSIGN c-nom-desenho = ""
+                 c-rev-desenho = ""
+                 c-dat-desenho = "". 
+
+      ELSE DO:
+
+          ASSIGN c-nom-desenho = ""
+                 c-rev-desenho = ""
+                 c-dat-desenho = "". 
+
+          /*Revis∆o de Desenhos*/
+          for each desenho-item where desenho-item.it-codigo = item.it-codigo         no-lock,
+              last revisao      where revisao.de-codigo      = desenho-item.de-codigo no-lock:
+
+              ASSIGN c-nom-desenho = revisao.de-codigo                                                                                                         + fill(" ", i-qt-caracter - length(revisao.de-codigo)) + (if c-nom-desenho = "" then "" else " / " + c-nom-desenho)
+                     c-rev-desenho = (IF NOT tt-pdf.desenvolvimento THEN revisao.rv-codigo                          ELSE FILL(" ", LENGTH(revisao.rv-codigo))) + fill(" ", i-qt-caracter - length(revisao.rv-codigo)) + (if c-rev-desenho = "" then "" else " / " + c-rev-desenho)
+                     c-dat-desenho = (IF NOT tt-pdf.desenvolvimento THEN STRING(revisao.data-revisao, "99/99/9999") ELSE "          ")                         + fill(" ", i-qt-caracter - 10)                        + (if c-dat-desenho = "" then "" else " / " + c-dat-desenho).
+
+          end.
+
+          ASSIGN c-nom-desenho = "Desenho: " + c-nom-desenho
+                 c-rev-desenho = "Revis∆o: " + c-rev-desenho
+                 c-dat-desenho = "Data:    " + c-dat-desenho.
+
+      END.
 
       run pi-cria-dados ("Revis∆o de Desenhos: ",  22, 1, defaultFontBoldName, 0, 0, 0).
       run pi-cria-dados (c-nom-desenho,           122, 1, "",                  0, 0, 0).
@@ -1902,17 +2075,63 @@ procedure pi-gera-dados-item:
    def var c-freq             as char          no-undo.
    def var i-qtd-cada         as integer       no-undo.   
 
-   for each operacao where operacao.it-codigo = item.it-codigo no-lock
-                  break by operacao.it-codigo
-                        by operacao.op-codigo:
+   empty temp-table tt-op-temp.
+
+   for each operacao where operacao.it-codigo    = item.it-codigo         and
+                           operacao.cod-roteiro >= tt-param.c-roteiro-ini and
+                           operacao.cod-roteiro <= tt-param.c-roteiro-fim no-lock:
+
+      if operacao.data-inicio  <= today and
+         operacao.data-termino >= today then do:
+
+         create tt-op-temp.
+
+         buffer-copy operacao to tt-op-temp.
+
+      end.
+   end.
+
+   if not can-find(first tt-op-temp no-lock) then do:
+
+      for each rot-item where rot-item.it-codigo    = item.it-codigo         and
+                              rot-item.cod-roteiro >= tt-param.c-roteiro-ini and
+                              rot-item.cod-roteiro <= tt-param.c-roteiro-fim no-lock:
+
+         if rot-item.data-inicio  <= today and
+            rot-item.data-termino >= today then do:
+
+            for each operacao where operacao.it-codigo   = ""                   and
+                                    operacao.cod-roteiro = rot-item.cod-roteiro no-lock:
+
+               if operacao.data-inicio  <= today and
+                  operacao.data-termino >= today then do:
+
+                  create tt-op-temp.
+
+                  buffer-copy operacao to tt-op-temp.
+
+               end.
+            end.
+         end.
+      end.
+   end.
+
+   for each tt-op-temp                                                           no-lock,
+      first operacao where operacao.num-id-operacao = tt-op-temp.num-id-operacao no-lock
+                  break by tt-op-temp.it-codigo
+                        by tt-op-temp.op-codigo:
 
        if operacao.data-inicio  > today or
           operacao.data-termino < today then next.
                
+       if operacao.cod-roteiro < tt-param.c-roteiro-ini or
+          operacao.cod-roteiro > tt-param.c-roteiro-fim then next.
+
        run buscar-exames (input        0,
-                          input        operacao.it-codigo,
+                          input        item.it-codigo,
                           input        operacao.cod-roteiro,
                           input        operacao.op-codigo,
+                          INPUT        tt-param.i-qte,
                           output TABLE tt-exames).
 
        run pi-soma-linha (1).
@@ -1931,348 +2150,363 @@ procedure pi-gera-dados-item:
     
        i-qtd-linha-max = 1.
                      
-       for each tt-exames by tt-exames.cod-comp:
+       for each tt-exames by tt-exames.classifica:
     
-        assign c-reg   = ""
-               c-reg-2 = "".              
+           assign c-reg   = ""
+                  c-reg-2 = "".              
 
-        find first comp-exame where rowid(comp-exame) = rowid-comp no-lock no-error.
-  
-        find first ext-exame where ext-exame.cod-exame = tt-exames.cod-exame no-lock no-error.
+           find first comp-exame where rowid(comp-exame) = tt-exames.rowid-comp no-lock no-error.
+
+           find first ext-exame where ext-exame.cod-exame = tt-exames.cod-exame no-lock no-error.
           
-        if available ext-exame then do:          
-     
-           if ext-exame.log-um-ficha  then c-reg   = string(ext-exame.cd-texto).
-           if ext-exame.log-lote-fixo then c-reg   = string(ext-exame.qtd-lote-fixo).
-        
-           if ext-exame.log-um-cada   then 
-              assign c-reg   = "1/" + string(ext-exame.qtd-um-cada)
-                     c-reg-2 = string(ext-exame.qtd-um-cada).
-             
-           /*if c-reg = "" then do: /*Amostragem*/*/
+           if available ext-exame then do:          
 
-           find first exame where exame.cod-exame = comp-exame.cod-exame no-lock no-error.                     
+              if ext-exame.log-um-ficha  then c-reg   = string(ext-exame.cd-texto).
+              if ext-exame.log-lote-fixo then c-reg   = string(ext-exame.qtd-lote-fixo).
+
+              if ext-exame.log-um-cada   then 
+                 assign c-reg   = "1/" + string(ext-exame.qtd-um-cada)
+                        c-reg-2 = string(ext-exame.qtd-um-cada).
+
+              find first exame where exame.cod-exame = comp-exame.cod-exame no-lock no-error.                     
     
-           if c-reg = "" or (avail exame and exame.amostrage) then do: /*Amostragem*/    
-           
-              find first esp-nivel-insp no-lock  
-                   where esp-nivel-insp.cod-exame = comp-exame.cod-exame
-                     and esp-nivel-insp.cod-comp  = comp-exame.cod-comp no-error.
-                
-              if avail esp-nivel-insp then do:
-                 find first nivel-insp where nivel-insp.nivel     = esp-nivel-insp.nivel              and 
-                                             nivel-insp.tam-lote >= tt-param.i-qte no-lock no-error.
-                      
-                 if available nivel-insp and tt-param.i-qte <> 0 then do:
-                    find first amostra where amostra.tipo-plano   = esp-nivel-insp.tipo-plano          and 
-                                             amostra.cod-amostra  = nivel-insp.cod-amostra no-lock no-error.
-                    if available amostra then
-                       assign c-reg   = "1/" + string(round((tt-param.i-qte / amostra.tam-amostra),0))
-                              c-reg-2 = string(amostra.tam-amostra).                       
+              if c-reg = "" or (avail exame and exame.amostrage) then do: /*Amostragem*/    
+
+                 find first esp-nivel-insp no-lock  
+                      where esp-nivel-insp.cod-exame = comp-exame.cod-exame
+                        and esp-nivel-insp.cod-comp  = comp-exame.cod-comp no-error.
+
+                 if avail esp-nivel-insp then do:
+                    find first nivel-insp where nivel-insp.nivel     = esp-nivel-insp.nivel              and 
+                                                nivel-insp.tam-lote >= tt-param.i-qte no-lock no-error.
+
+                    if available nivel-insp and tt-param.i-qte <> 0 then do:
+                       find first amostra where amostra.tipo-plano   = esp-nivel-insp.tipo-plano          and 
+                                                amostra.cod-amostra  = nivel-insp.cod-amostra no-lock no-error.
+                       if available amostra then
+                          assign c-reg   = "1/" + string(round((tt-param.i-qte / amostra.tam-amostra),0))
+                                 c-reg-2 = string(amostra.tam-amostra).                       
+                       else
+                          assign c-reg = "Erro1".
+                    end.
                     else
-                       assign c-reg = "Erro1".
+                       assign c-reg = " ".
                  end.
-                 else
-                    assign c-reg = " ".
+                 else do:
+                    find first nivel-insp where nivel-insp.nivel     = item.nivel and 
+                                                nivel-insp.tam-lote >= 1          no-lock no-error.
+
+                    if available nivel-insp then do:                  
+                       find first amostra where amostra.tipo-plano  = 2                      and 
+                                                amostra.cod-amostra = nivel-insp.cod-amostra no-lock no-error.
+
+                       if available amostra then
+                          assign c-reg   = "1/" + string(amostra.tam-amostra)
+                                 c-reg-2 = string(amostra.tam-amostra).
+
+                       else
+                          assign c-reg = "Erro1".
+                    end.
+                    else
+                       assign c-reg = "Erro2".
+
+                 end.    
               end.
-              else do:
-                 find first nivel-insp where nivel-insp.nivel     = item.nivel and 
-                                             nivel-insp.tam-lote >= 1          no-lock no-error.
-                             
-                 if available nivel-insp then do:                  
-                    find first amostra where amostra.tipo-plano  = 2                      and 
-                                             amostra.cod-amostra = nivel-insp.cod-amostra no-lock no-error.
-                                 
-                    if available amostra then
-                       assign c-reg   = "1/" + string(amostra.tam-amostra)
-                              c-reg-2 = string(amostra.tam-amostra).
-                          
-                    else
-                       assign c-reg = "Erro1".
-                 end.
-                 else
-                    assign c-reg = "Erro2".
-                 
-              end.    
            end.
-        end.
          
-        find first ext-texto-cq where ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
-            
-        if available ext-texto-cq then do:
-       
-             find first tt-ext-texto-cq where tt-ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
-           
-             if not avail tt-ext-texto-cq then do:
-           
-                create tt-ext-texto-cq.
-               
-                tt-ext-texto-cq.cd-texto  = ext-texto-cq.cd-texto.
-                tt-ext-texto-cq.descricao = ext-texto-cq.descricao.
-                      
-             end.
-          end.
-    
-          v-log-char = no.
-       
-          do v-cont = 1 to length(c-reg):
-       
-             v-cod-caracter = substr(c-reg, v-cont, 1).
-           
-             if index('01234567890':U, v-cod-caracter) = 0 then do:
-           
-                v-log-char = yes.
-               
-             end.
-          end.
-    
-          /*if c-reg-2 = "" then do:
-       
-             if v-log-char then
-          
-                assign i-qtd-linha = 1.
-              
-             else do:
-              
-                i-qtd-linha = truncate(decimal(c-reg), 0) + (if (decimal(c-reg) - truncate(decimal(c-reg), 0)) > 0 then 1 else 0).
-              
-                if i-qtd-linha <= 7 then
-                   i-qtd-linha  = 1.
-                else
-                   i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).
-          
-             end.
-          end.
-          else do:
-       
-             i-qtd-linha = tt-param.qte / integer(substring(c-reg,3)).
-          
-             if i-qtd-linha <= 7 then
-                i-qtd-linha  = 1.
-             else
-                i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).
-          
-          end.*/
-          
-          .if comp-exame.cod-comp = 20 and comp-exame.cod-exame = 1189 then
-             message c-reg view-as alert-box.
-             
-          /*if exame.amostragem then*/
-             assign c-freq = c-reg.        
-          /*else
-             assign c-freq  = "".*/
-          
-          if avail ext-exame and ext-exame.cd-texto <> "" then
-             c-reg   = ext-exame.cd-texto.
-          else
-             c-reg = "".             
-             
-          if c-reg-2 = "" then do:
-             assign i-qtd-linha = 1.
-          end.
-          else do:
-             if exame.amostragem then
-                if index(c-reg-2, "/") > 0 then 
-                   assign i-qtd-cada = integer(substring(c-reg-2,3)).
-                else
-                   assign i-qtd-cada = integer(c-reg-2). 
-             else
-                if index(c-freq, "/") > 0 then 
-                   assign i-qtd-cada = tt-param.i-qte / integer(substring(c-freq,3)).
-                else
-                   assign i-qtd-cada = tt-param.i-qte / integer(c-freq).                
-         
-             .ASSIGN i-qtd-linha  = truncate(tt-param.i-qte / i-qtd-cada, 0) + (if ((tt-param.i-qte / i-qtd-linha) - truncate(ord-prod.qt-ordem / i-qtd-linha, 0)) > 0 then 1 else 0).             
-             
-              if i-qtd-cada <= 6 then
-                 ASSIGN i-qtd-linha  = 1.
-              else
-                 ASSIGN i-qtd-linha  = truncate(i-qtd-cada / 6, 0).  /*truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).*/
-                  
-              if i-qtd-linha * 6 < i-qtd-cada then
-                 assign i-qtd-linha = i-qtd-linha + 1.
-           end.             
+           find first ext-texto-cq where ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
 
-          .if i-qtd-linha > i-qtd-linha-max then
-             assign i-qtd-linha-max = i-qtd-linha.
+           if available ext-texto-cq then do:
 
-          find first ext-comp-exame where ext-comp-exame.cod-exame = tt-exames.cod-exame and 
-                                          ext-comp-exame.cod-comp  = tt-exames.cod-comp  no-lock no-error.
-              
-          if available ext-comp-exame then
-             assign c-des-freq-med = ext-comp-exame.des-freq-med.
-          else
-             assign c-des-freq-med = "".            
-    
-          c-cod-comp = string(tt-exames.cod-comp).
-          
-          if substring(c-des-freq-med,1,10) = "" or (avail exame and exame.amostragem) /*or (avail ext-exame and ext-exame.log-um-cada)*/ then
-             assign c-des-freq-med-aux = c-reg-2. /*amostra.tam-amostra*/
-          else
-             assign c-des-freq-med-aux = substring(c-des-freq-med,1,10).
+                find first tt-ext-texto-cq where tt-ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
 
-          RUN quebrar-texto (INPUT comp-exame.descricao,
-                             INPUT 25,
-                             OUTPUT c-descricao).
-    
-          RUN quebrar-texto (INPUT comp-exame.inst-equip,
-                             INPUT 15,
-                             OUTPUT c-meio-controle).  
-  
-                             
-          assign v-linha-1 = " " + 
-                             string(c-cod-comp,"x(06)") + 
-                             " " + 
-                             string(c-descricao[1],"x(25)") + 
-                             " |" + 
-                             string(c-meio-controle[1],"x(15)") + 
-                             " " + 
-                             string(substring(c-des-freq-med-aux,1,7),"x(7)") + 
-                             "   " +
-                             /*
-                             Solicitado em 19/01/2015 pelo Rodrigo Freitas, para que fique em coment†rio atÇ entrar em vigor a nova SM
-                             string(c-freq,"x(06)") + " " +                           
-                             */
-                             string(" ", "x(06)") + " " +
-                             string(c-reg,"x(03)")  +
-                             "______ ______ ______ ______ ______ ______".
-                    
-                          .
-    
-          if c-descricao[2]                  <> "" or 
-             c-meio-controle[2]              <> "" or 
-             substring(c-des-freq-med,11,10) <> "" then
-    
-             assign v-linha-1-aux = "        " +
-                                    string(c-descricao[2],"x(25)") + 
-                                    " |" + 
-                                    string(c-meio-controle[2],"x(15)") + 
-                                    " " + 
-                                    string(substring(c-des-freq-med,11,10),"x(10)")
-                                   .
-          else
-             assign v-linha-1-aux = "".
-    
-          assign v-linha-aux = "                                                                   " +
-                               "    ______ ______ ______ ______ ______ ______".
-    
-          assign i-aux = 1.
-    
-          do while i-aux <= i-qtd-linha:
-           
-             if i-aux = 1 then do:
-           
-                run pi-cria-dados (v-linha-1, 130, 1, "", 8, 0, 0).
+                if not avail tt-ext-texto-cq then do:
 
-                if v-linha-1-aux <> "" then do:
+                   create tt-ext-texto-cq.
 
-                   run pi-soma-linha (1).
-
-                   run pi-cria-dados (v-linha-1-aux, 68, 0, "", 8, 0, 0).
-
-                   if i-qtd-linha > 1 then do:
-
-                      run pi-cria-dados ("    ______ ______ ______ ______ ______ ______",45, 1, "", 8, 0, 0).
-
-                      assign i-aux = i-aux + 1.
-
-                   end.
-
-                   run pi-soma-linha (1).
+                   tt-ext-texto-cq.cd-texto  = ext-texto-cq.cd-texto.
+                   tt-ext-texto-cq.descricao = ext-texto-cq.descricao.
 
                 end.
+           end.
+
+           v-log-char = no.
+
+           do v-cont = 1 to length(c-reg):
+
+              v-cod-caracter = substr(c-reg, v-cont, 1).
+
+              if index('01234567890':U, v-cod-caracter) = 0 then do:
+
+                 v-log-char = yes.
+
+              end.
+           end.
     
-                run pi-soma-linha (1).
+           assign c-freq = c-reg.        
+          
+           if avail ext-exame and ext-exame.cd-texto <> "" then
+              c-reg   = ext-exame.cd-texto.
+           else
+              c-reg = "".             
 
-             end.
-             else do:
+           if c-reg-2 = "" then do:
+              assign i-qtd-linha = 1.
+           end.
+           else do:
+              if exame.amostragem then
+                 if index(c-reg-2, "/") > 0 then 
+                    assign i-qtd-cada = integer(substring(c-reg-2,3)).
+                 else
+                    assign i-qtd-cada = integer(c-reg-2). 
+              else
+                 if index(c-freq, "/") > 0 then 
+                    assign i-qtd-cada = tt-param.i-qte / integer(substring(c-freq,3)).
+                 else
+                    assign i-qtd-cada = tt-param.i-qte / integer(c-freq).                
 
-                run pi-cria-dados (v-linha-aux, 130, 2, "", 8, 0, 0).
+               if i-qtd-cada <= 6 then
+                  ASSIGN i-qtd-linha  = 1.
+               else
+                  ASSIGN i-qtd-linha  = truncate(i-qtd-cada / 6, 0).  /*truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).*/
 
-             end.
+               if i-qtd-linha * 6 < i-qtd-cada then
+                  assign i-qtd-linha = i-qtd-linha + 1.
+           end.             
 
-             assign i-aux = i-aux + 1.
+           find first ext-comp-exame where ext-comp-exame.cod-exame = tt-exames.cod-exame and 
+                                           ext-comp-exame.cod-comp  = tt-exames.cod-comp  no-lock no-error.
 
-          end.
-    
-          if c-reg = "Erro1" then do:
+           if available ext-comp-exame then
+              assign c-des-freq-med = ext-comp-exame.des-freq-med.
+           else
+              assign c-des-freq-med = "".            
 
-             run pi-cria-dados (" *** N«O FOI ENCONTRADO TAMANHO DE AMOSTRAGEM *** ", 62, 1, "", 8, 0, 0).
+           c-cod-comp = string(tt-exames.cod-comp).
 
-          end.
+           if substring(c-des-freq-med,1,10) = "" or (avail exame and exame.amostragem) /*or (avail ext-exame and ext-exame.log-um-cada)*/ then
+              assign c-des-freq-med-aux = c-reg-2. /*amostra.tam-amostra*/
+           else
+              assign c-des-freq-med-aux = substring(c-des-freq-med,1,10).
 
-          if c-reg = "Erro2" then do:
+           RUN quebrar-texto (INPUT comp-exame.descricao,
+                              INPUT 25,
+                              OUTPUT c-descricao).
 
-             run pi-cria-dados (" *** N«O FOI ENCONTRADO NIVEL DE INSPEÄAO *** ", 62, 1, "", 8, 0, 0).
+           RUN quebrar-texto (INPUT comp-exame.inst-equip,
+                              INPUT 15,
+                              OUTPUT c-meio-controle).  
+  
+           assign v-linha-1 = " " + 
+                              string(c-cod-comp,"x(06)") + 
+                              " " + 
+                              string(c-descricao[1],"x(25)") + 
+                              " |" + 
+                              string(c-meio-controle[1],"x(15)") + 
+                              " " + 
+                              string(substring(c-des-freq-med-aux,1,10),"x(10)") +    /* MArcio   string(substring(c-des-freq-med-aux,1,7),"x(7)") + )  */
+                              " __" +
+                              /*
+                              Solicitado em 19/01/2015 pelo Rodrigo Freitas, para que fique em coment†rio atÇ entrar em vigor a nova SM
+                              string(c-freq,"x(06)") + " " +                           
+                              */
+                              string("______", "x(06)") + " " +
+                              string(c-reg,"x(03)")  +
+                              "______ ______ ______ ______ ______ ______".
 
-          end.
+                           .
+
+           if c-descricao[2]                  <> "" or 
+              c-meio-controle[2]              <> "" or 
+              substring(c-des-freq-med,11,10) <> "" then
+
+              assign v-linha-1-aux = "        " +
+                                     string(c-descricao[2],"x(25)") + 
+                                     " |" + 
+                                     string(c-meio-controle[2],"x(15)") + 
+                                     " " + 
+                                     string(substring(c-des-freq-med,11,10),"x(10)")
+                                    .
+           else
+              assign v-linha-1-aux = "".
+
+           assign v-linha-aux = "                                                                   " +
+                                "       ______ ______ ______ ______ ______ ______".
+
+           assign i-aux = 1.
+
+           do while i-aux <= i-qtd-linha:
+
+              if i-aux = 1 then do:
+
+                 run pi-cria-dados (v-linha-1, 130, 1, "", 8, 0, 0).
+
+                 if v-linha-1-aux <> "" then do:
+
+                    run pi-soma-linha (1).
+
+                    run pi-cria-dados (v-linha-1-aux, 68, 0, "", 8, 0, 0).
+
+                    if i-qtd-linha > 1 then do:
+
+                       run pi-cria-dados ("      ______ ______ ______ ______ ______ ______",48, 1, "", 8, 0, 0).
+
+                       assign i-aux = i-aux + 1.
+
+                    end.
+
+                    run pi-soma-linha (1).
+
+                 end.
+
+                 run pi-soma-linha (1).
+
+              end.
+              else do:
+
+                 run pi-cria-dados (v-linha-aux, 130, 2, "", 8, 0, 0).
+
+              end.
+
+              assign i-aux = i-aux + 1.
+
+           end.
+
+           if c-reg = "Erro1" then do:
+
+              run pi-cria-dados (" *** N«O FOI ENCONTRADO TAMANHO DE AMOSTRAGEM *** ", 62, 1, "", 8, 0, 0).
+
+           end.
+
+           if c-reg = "Erro2" then do:
+
+              run pi-cria-dados (" *** N«O FOI ENCONTRADO NIVEL DE INSPEÄAO *** ", 62, 1, "", 8, 0, 0).
+
+           end.
        end.
 
        if can-find(first tt-exames) then do:
 
+          IF AVAIL operacao AND operacao.nr-oper-pad > 0 THEN
+
+             ASSIGN oper-padrao2 = operacao.nr-oper-pad. 
+
+          ELSE DO:
+
+             ASSIGN oper-padrao2 = 2.
+
+          END.
+
+          IF oper-padrao2 = 1  THEN DO:
+
+             run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                             Responsavel liberacao Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                          ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+
+          END. 
+          ELSE DO:
+
+             run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                             Responsavel liberacao Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+
+          END.
+
           run pi-soma-linha (2).
 
-          run pi-cria-dados ("                                                       Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                          Respons†vel Liberaá∆o Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                                               Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                                               Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Produá∆o:  Qte. Aprovado:_______________          Qte. Rejeito Comum:_______________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("Operaá∆o: Isento de material de outro lote     ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Plano de controle: Apontamento e preenchimento ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Produto: Identificaá∆o e armazenamento         ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("Qualidade:", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Atributo:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+          run pi-cria-dados ("Vari†vel:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("Outros:                          Qte. Rejeito Comum:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (2).
+
+          run pi-cria-dados ("( )Aprovado ( )Reprovado ( )N/A     Nr. RO:__________     Data:__________     Matr°cula:__________", 118, 2, "", 8, 0, 0).
+
+          run pi-soma-linha (1).
 
           run pi-cria-dados (fill("Ó", 122), 122, 0, "", 0, 0, 0).
 
        end.
 
-       if last-of (operacao.it-codigo) then do:
+       if last-of (tt-op-temp.it-codigo) then do:
 
           run buscar-exames (input        0,
-                             input        operacao.it-codigo,
+                             input        item.it-codigo,
                              input        operacao.cod-roteiro,
                              input        0,
+                             INPUT        tt-param.i-qte,
                              output TABLE tt-exames).
 
           if can-find(first tt-exames) then do:
 
              run pi-soma-linha (1).
-       
+
              run pi-cria-dados ("Caracter°sticas Controladas do Item", 35, 1, "", 0, 0, 0).
 
              run pi-cria-dados (fill("Ó", 122), 122, 1, "", 0, 0, 0).
 
           end.
-    
+
           i-qtd-linha-max = 1.
-       
-          for each tt-exames by tt-exames.cod-comp:
-       
+
+          for each tt-exames by tt-exames.classifica:
+
              find first comp-exame where rowid(comp-exame) = tt-exames.rowid-comp no-lock no-error.
-                    
+
              assign c-reg   = ""
                     c-reg-2 = "".
 
              find first ext-exame where ext-exame.cod-exame = comp-exame.cod-exame no-lock no-error.
-               
+           
              if available ext-exame then do:
-          
+
                 if ext-exame.log-um-ficha  then c-reg = string(ext-exame.cd-texto).
                 if ext-exame.log-lote-fixo then c-reg = string(ext-exame.qtd-lote-fixo).
-              
+
                 if ext-exame.log-um-cada then 
                    assign c-reg   = "1/" + string(ext-exame.qtd-um-cada)
                           c-reg-2 = string(ext-exame.qtd-um-cada).
-    
-/*                if c-reg = "" then do: /*Amostragem*/ */
 
                 find first exame where exame.cod-exame = comp-exame.cod-exame no-lock no-error.   
-    
+
                 if c-reg = "" or (avail exame and exame.amostrage) then do: /*Amostragem*/
-                
+
                    find first esp-nivel-insp no-lock  
                         where esp-nivel-insp.cod-exame = comp-exame.cod-exame
                           and esp-nivel-insp.cod-comp  = comp-exame.cod-comp no-error.
-                
+
                    if avail esp-nivel-insp then do:
                       find first nivel-insp where nivel-insp.nivel     = esp-nivel-insp.nivel              and 
                                                   nivel-insp.tam-lote >= tt-param.i-qte no-lock no-error.
-                            
+
                       if available nivel-insp and tt-param.i-qte <> 0 then do:
                          find first amostra where amostra.tipo-plano   = esp-nivel-insp.tipo-plano          and 
                                                   amostra.cod-amostra  = nivel-insp.cod-amostra no-lock no-error.
@@ -2285,104 +2519,84 @@ procedure pi-gera-dados-item:
                       else
                          assign c-reg = " ".
                    end.
-                   else do:  
-              
-                      /*find first nivel-insp where nivel-insp.nivel     = item.nivel and 
-                                                  nivel-insp.tam-lote >= 1          no-lock no-error.
-                                  
-                      if available nivel-insp then do:
-                           
-                         find first amostra where amostra.tipo-plano  = 2                      and 
-                                                  amostra.cod-amostra = nivel-insp.cod-amostra no-lock no-error.
-                                                        
-                         if available amostra then
-                            assign c-reg   = "1/" + string(amostra.tam-amostra)
-                                   c-reg-2 = string(amostra.tam-amostra).
-     
-                         else
-                            assign c-reg = "Erro1".
-                      end.
-                      else
-                         assign c-reg = "Erro2". */
-                   end.
-                end.
-             end.
-          
-             find first ext-texto-cq where ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
-               
-             if available ext-texto-cq then do:
-          
-                find first tt-ext-texto-cq where tt-ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
-              
-                if not available tt-ext-texto-cq then do:
-              
-                   create tt-ext-texto-cq.
-                  
-                   tt-ext-texto-cq.cd-texto  = ext-texto-cq.cd-texto.
-                   tt-ext-texto-cq.descricao = ext-texto-cq.descricao.
-                         
                 end.
              end.
        
+             find first ext-texto-cq where ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
+
+             if available ext-texto-cq then do:
+
+                find first tt-ext-texto-cq where tt-ext-texto-cq.cd-texto = string(c-reg) no-lock no-error.
+
+                if not available tt-ext-texto-cq then do:
+
+                   create tt-ext-texto-cq.
+
+                   tt-ext-texto-cq.cd-texto  = ext-texto-cq.cd-texto.
+                   tt-ext-texto-cq.descricao = ext-texto-cq.descricao.
+
+                end.
+             end.
+
              v-log-char = no.
-          
+
              do v-cont = 1 to length(c-reg):
-          
+
                 v-cod-caracter = substr(c-reg, v-cont, 1).
-              
+
                 if index('01234567890':U, v-cod-caracter) = 0 then do:
-              
+
                    v-log-char = yes.
-                  
+
                 end.
              end.
     
              if c-reg-2 = "" then do:
-          
+
                 if v-log-char then
-             
+
                    assign i-qtd-linha = 1.
-                 
+
                 else do:
-                 
+
                    i-qtd-linha = truncate(decimal(c-reg), 0) + (if (decimal(c-reg) - truncate(decimal(c-reg), 0)) > 0 then 1 else 0).
-                 
+
                    if i-qtd-linha <= 7 then
                       i-qtd-linha  = 1.
                    else
                       i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).
-             
+
                 end.
              end.
              else do:
-          
+
                 i-qtd-linha = integer(substring(c-reg,3)).
-             
+
                 if i-qtd-linha <= 7 then
                    i-qtd-linha  = 1.
                 else
                    i-qtd-linha  = truncate(i-qtd-linha / 7, 0) + (if (i-qtd-linha - truncate(i-qtd-linha / 7, 0)) > 0 then 1 else 0).
-             
+
              end.
 
              if i-qtd-linha > i-qtd-linha-max then
                 assign i-qtd-linha-max = i-qtd-linha.
-    
+
              find first ext-comp-exame where ext-comp-exame.cod-exame = comp-exame.cod-exame and 
                                              ext-comp-exame.cod-comp  = comp-exame.cod-comp  no-lock no-error.
-                 
+
              if available ext-comp-exame then
                 assign c-des-freq-med = ext-comp-exame.des-freq-med.
              else
                 assign c-des-freq-med = "".            
-        
+
              c-cod-comp = string(comp-exame.cod-comp).
-          
+       
              if substring(c-des-freq-med,1,10) = "" or (avail exame and exame.amostragem) or (avail ext-exame and ext-exame.log-um-cada) then
                 assign c-des-freq-med-aux = c-reg-2.
              else
                 assign c-des-freq-med-aux = substring(c-des-freq-med,1,10).
-              
+
              RUN quebrar-texto (INPUT comp-exame.descricao,
                                 INPUT 25,
                                 OUTPUT c-descricao).
@@ -2390,7 +2604,7 @@ procedure pi-gera-dados-item:
              RUN quebrar-texto (INPUT comp-exame.inst-equip,
                                 INPUT 15,
                                 OUTPUT c-meio-controle).
-        
+
              assign v-linha-1 = " " + string(c-cod-comp,"x(06)") + 
                                 " " + 
                                 string(c-descricao[1],"x(25)") + 
@@ -2399,15 +2613,15 @@ procedure pi-gera-dados-item:
                                 " " + 
                                 string(substring(c-des-freq-med-aux,1,10),"x(10)") + 
                                 " " +
-                                string(c-reg,"x(06)") + 
+                                string(c-reg,"x(07)") + 
                                 " " +
                                 "______ ______ ______ ______ ______ ______ ______"
                                 .
-    
+
              if c-descricao[2]                  <> "" or 
                 c-meio-controle[2]              <> "" or 
                 substring(c-des-freq-med,11,10) <> "" then
-        
+
                 assign v-linha-1-aux =  "        " +
                                         string(c-descricao[2],"x(25)") + 
                                         " |" + 
@@ -2417,75 +2631,101 @@ procedure pi-gera-dados-item:
                                       .
              else
                 assign v-linha-1-aux = "".
-        
+
              assign v-linha-aux = "                                                                   " +
                                   "   ______ ______ ______ ______ ______ ______".
-        
+
              assign i-aux = 1.
-        
-             do while i-aux <= i-qtd-linha:
-              
-                if i-aux = 1 then do:
-              
-                   run pi-cria-dados (v-linha-1, 130, 1, "", 8, 0, 0).
-
-                   if v-linha-1-aux <> "" then do:
-
-                      run pi-soma-linha (1).
-
-                      run pi-cria-dados (v-linha-1-aux, 68, 0, "", 8, 0, 0).
-
-                      if i-qtd-linha > 1 then do:
-
-                         run pi-cria-dados (" ______ ______ ______ ______ ______ ______", 45, 1, "", 8, 0, 0).
-
-                         assign i-aux = i-aux + 1.
-
-                      end.
-
-                      run pi-soma-linha (1).
-
-                   end.
-
-                   run pi-soma-linha (1).
-        
-                end.
-                else do:
-
-                   run pi-cria-dados (v-linha-aux, 130, 2, "", 8, 0, 0).
-
-               end.
-
-               assign i-aux = i-aux + 1.
-
-            end.
-    
-            if c-reg = "Erro1" then do:
-
-               run pi-cria-dados (" *** N«O FOI ENCONTRADO TAMANHO DE AMOSTRAGEM *** ", 62, 1, "", 8, 0, 0).
-
-            end.
-
-            if c-reg = "Erro2" then do:
-
-               run pi-cria-dados (" *** N«O FOI ENCONTRADO NIVEL DE INSPEÄAO *** ", 62, 1, "", 8, 0, 0).
-
-            end.
-         end.
-
-         if can-find(first tt-exames) then do:
-
-            run pi-soma-linha (2).
        
-          run pi-cria-dados ("                                                       Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                          Respons†vel Liberaá∆o Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                                               Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-          run pi-cria-dados ("                                                               Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
-
-          run pi-cria-dados (fill("Ó", 122), 122, 0, "", 8, 0, 0).
+             do while i-aux <= i-qtd-linha:
           
-         end.
-      end.
+                 if i-aux = 1 then do:
+
+                    run pi-cria-dados (v-linha-1, 130, 1, "", 8, 0, 0).
+
+                    if v-linha-1-aux <> "" then do:
+
+                       run pi-soma-linha (1).
+
+                       run pi-cria-dados (v-linha-1-aux, 68, 0, "", 8, 0, 0).
+
+                       if i-qtd-linha > 1 then do:
+
+                          run pi-cria-dados ("  ______ ______ ______ ______ ______ ______", 45, 1, "", 8, 0, 0).
+
+                          assign i-aux = i-aux + 1.
+
+                       end.
+
+                       run pi-soma-linha (1).
+
+                    end.
+
+                    run pi-soma-linha (1).
+
+                 end.
+                 else do:
+
+                    run pi-cria-dados (v-linha-aux, 130, 2, "", 8, 0, 0).
+
+                 end.
+
+                 assign i-aux = i-aux + 1.
+
+             end.
+    
+             if c-reg = "Erro1" then do:
+
+                run pi-cria-dados (" *** N«O FOI ENCONTRADO TAMANHO DE AMOSTRAGEM *** ", 62, 1, "", 8, 0, 0).
+
+             end.
+
+             if c-reg = "Erro2" then do:
+
+                run pi-cria-dados (" *** N«O FOI ENCONTRADO NIVEL DE INSPEÄAO *** ", 62, 1, "", 8, 0, 0).
+
+             end.
+          end.
+
+          if can-find(first tt-exames) then do:
+
+             run pi-soma-linha (2).
+
+             run pi-cria-dados ("                                                          Operador Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                             Respons†vel Liberaá∆o Nro:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Data:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("                                                                  Hora:   ______ ______ ______ ______ ______ ______", 118, 2, "", 8, 0, 0).
+
+             run pi-soma-linha (2).
+
+             run pi-cria-dados ("Produá∆o:  Qte. Aprovado:_______________          Qte. Rejeito Comum:_______________", 118, 2, "", 8, 0, 0).
+
+             run pi-soma-linha (2).
+
+             run pi-cria-dados ("Operaá∆o: Isento de material de outro lote     ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("Plano de controle: Apontamento e preenchimento ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("Produto: Identificaá∆o e armazenamento         ( )OK ( )NOK        Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+             run pi-soma-linha (2).
+
+             run pi-cria-dados ("Qualidade:", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("Atributo:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+             run pi-cria-dados ("Vari†vel:  Qte. Amostra:__________     Qte. Rejeito:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+             run pi-soma-linha (2).
+
+             run pi-cria-dados ("Outros:                          Qte. Rejeito Comum:__________     Observaá∆o:___________________________________", 118, 2, "", 8, 0, 0).
+
+             run pi-soma-linha (2).
+
+             run pi-cria-dados ("( )Aprovado ( )Reprovado ( )N/A     Nr. RO:__________     Data:__________     Matr°cula:__________", 118, 2, "", 8, 0, 0).
+
+             run pi-soma-linha (1).
+
+             run pi-cria-dados (fill("Ó", 122), 122, 0, "", 8, 0, 0).
+
+          end.
+       end.
    end.
 
    run pi-soma-linha (2).
@@ -2533,7 +2773,12 @@ procedure buscar-exames:
    def input  parameter c-it-codigo    like oper-ord.it-codigo    no-undo.
    def input  parameter c-cod-roteiro  like oper-ord.cod-roteiro  no-undo.
    def input  parameter i-op-codigo    like oper-ord.op-codigo    no-undo.
+   def input  parameter de-qt-item     like ord-prod.qt-ordem     no-undo.
    def output parameter table for tt-exames.
+
+   DEF VAR c-it-aux AS CHAR NO-UNDO.
+
+   c-it-aux = c-it-codigo.
 
    EMPTY TEMP-TABLE tt-exames.
    
@@ -2560,13 +2805,34 @@ procedure buscar-exames:
                tt-exames.cod-comp   = comp-exame.cod-comp.
                tt-exames.rowid-comp = rowid(comp-exame).
 
+               IF NOT tt-param.l-ord-amostra THEN
+
+                  ASSIGN tt-exames.classifica = string(comp-exame.cod-comp, "9999999999").
+
+               ELSE DO:
+
+                  RUN pi-busca-amostragem (INPUT  c-it-aux,
+                                           INPUT  de-qt-item,
+                                           OUTPUT tt-exames.classifica).
+
+               END.
             end.
          end.
       end.
       else do:
 
-         for each oper-exam where oper-exam.it-codigo = c-it-codigo and 
-                                  oper-exam.op-codigo = i-op-codigo no-lock:
+         if c-cod-roteiro <> "" and
+            not can-find(first oper-exam where oper-exam.it-codigo   = c-it-codigo   and 
+                                               oper-exam.cod-roteiro = c-cod-roteiro and
+                                               oper-exam.op-codigo   = i-op-codigo   no-lock) then do:
+
+            c-it-codigo = "".
+
+         end.
+
+         for each oper-exam where oper-exam.it-codigo   = c-it-codigo   and
+                                  oper-exam.cod-roteiro = c-cod-roteiro and
+                                  oper-exam.op-codigo   = i-op-codigo   no-lock:
 
             for each comp-exame where comp-exame.cod-exam = oper-exam.cod-exame no-lock:
 
@@ -2578,6 +2844,17 @@ procedure buscar-exames:
                tt-exames.cod-comp   = comp-exame.cod-comp.
                tt-exames.rowid-comp = rowid(comp-exame).
 
+               IF NOT tt-param.l-ord-amostra THEN
+
+                  ASSIGN tt-exames.classifica = string(comp-exame.cod-comp, "9999999999").
+
+               ELSE DO:
+
+                  RUN pi-busca-amostragem (INPUT  c-it-aux,
+                                           INPUT  de-qt-item,
+                                           OUTPUT tt-exames.classifica).
+
+               END.
             end.
          end.
       end.
@@ -2585,6 +2862,18 @@ procedure buscar-exames:
    else do:
 
       for each it-exame where it-exame.it-codigo = c-it-codigo no-lock:
+
+         if not tt-param.l-imp-por-item and
+            can-find(first esp-oper-exam where esp-oper-exam.nr-ord-produ = i-nr-ord-produ          and
+                                               esp-oper-exam.it-codigo    = c-it-codigo             and
+                                               esp-oper-exam.cod-roteiro  = c-cod-roteiro           and
+                                               esp-oper-exam.op-codigo    = esp-oper-exam.op-codigo and
+                                               esp-oper-exam.cod-exame    = it-exame.cod-exame      no-lock) then next.
+
+         if can-find(first oper-exam where oper-exam.it-codigo   = c-it-codigo         and 
+                                           oper-exam.cod-roteiro = c-cod-roteiro       and
+                                           oper-exam.op-codigo   = oper-exam.op-codigo and
+                                           oper-exam.cod-exame   = it-exame.cod-exame  no-lock) then next.
 
          for each comp-exame where comp-exame.cod-exam = it-exame.cod-exame no-lock:
       
@@ -2594,10 +2883,112 @@ procedure buscar-exames:
             tt-exames.cod-exame  = it-exame.cod-exame.
             tt-exames.cod-comp   = comp-exame.cod-comp.
             tt-exames.rowid-comp = rowid(comp-exame).
-      
+
+            IF NOT tt-param.l-ord-amostra THEN
+
+               ASSIGN tt-exames.classifica = string(comp-exame.cod-comp, "9999999999").
+
+            ELSE DO:
+
+               RUN pi-busca-amostragem (INPUT  c-it-aux,
+                                        INPUT  de-qt-item,
+                                        OUTPUT tt-exames.classifica).
+
+            END.
          end.
       end.
    end.     
+
+end procedure.
+
+
+
+procedure pi-busca-amostragem:
+
+   DEF INPUT  PARAMETER c-it-codigo        AS CHAR    NO-UNDO.
+   DEF INPUT  PARAMETER de-qt-item         AS DECIMAL NO-UNDO.
+   DEF OUTPUT PARAMETER c-des-freq-med-aux AS CHAR    NO-UNDO.
+
+   DEF VAR c-reg          AS CHAR NO-UNDO.
+   DEF VAR c-reg-2        AS CHAR NO-UNDO.
+   DEF VAR c-des-freq-med AS CHAR NO-UNDO.
+
+   assign c-reg   = ""
+          c-reg-2 = "".
+
+   find first exame     where exame.cod-exame     = comp-exame.cod-exame no-lock no-error.
+   find first ext-exame where ext-exame.cod-exame = comp-exame.cod-exame no-lock no-error.
+
+   if available exame     and
+      available ext-exame then do:
+
+      if ext-exame.log-um-ficha  then c-reg = string(ext-exame.cd-texto).
+      if ext-exame.log-lote-fixo then c-reg = string(ext-exame.qtd-lote-fixo).
+
+      if ext-exame.log-um-cada then 
+         assign c-reg   = "1/" + string(ext-exame.qtd-um-cada)
+                c-reg-2 = string(ext-exame.qtd-um-cada).
+
+      if c-reg = "" or exame.amostragem then do: /*Amostragem*/
+
+         find first bf-item where bf-item.it-codigo = c-it-codigo no-lock no-error.
+
+         find first esp-nivel-insp where esp-nivel-insp.cod-exame = comp-exame.cod-exame and 
+                                         esp-nivel-insp.cod-comp  = comp-exame.cod-comp  no-lock no-error.
+
+         if avail esp-nivel-insp then do:
+
+            find first nivel-insp where nivel-insp.nivel     = esp-nivel-insp.nivel and 
+                                        nivel-insp.tam-lote >= integer(de-qt-item)  no-lock no-error.
+
+            if available nivel-insp then do:
+
+               find first amostra where amostra.tipo-plano  = esp-nivel-insp.tipo-plano and 
+                                        amostra.cod-amostra = nivel-insp.cod-amostra    no-lock no-error.
+
+               if available amostra then do:
+
+                  assign c-reg-2 = string(amostra.tam-amostra).                       
+
+               end.
+            end.
+         end.
+         else do:
+
+            if available bf-item then do:
+
+               find first nivel-insp where nivel-insp.nivel     = bf-item.nivel       and 
+                                           nivel-insp.tam-lote >= integer(de-qt-item) no-lock no-error.
+
+               if available nivel-insp then do:
+
+                  find first amostra where amostra.tipo-plano  = 2                      and 
+                                           amostra.cod-amostra = nivel-insp.cod-amostra no-lock no-error.
+
+                  if available amostra then do:
+
+                     assign c-reg-2 = string(amostra.tam-amostra).
+
+                  end.
+               end.
+             end.
+         end.
+      end.
+
+      find first ext-comp-exame where ext-comp-exame.cod-exame = comp-exame.cod-exame and 
+                                      ext-comp-exame.cod-comp  = comp-exame.cod-comp  no-lock no-error.
+
+      if available ext-comp-exame then
+         assign c-des-freq-med = ext-comp-exame.des-freq-med.
+      else
+         assign c-des-freq-med = "".            
+
+      if substring(c-des-freq-med,1,10) = "" or exame.amostragem  then
+         assign c-des-freq-med-aux = c-reg-2.
+      else
+         assign c-des-freq-med-aux = substring(c-des-freq-med,1,10).
+
+   end.
 
 end procedure.
 
@@ -2746,7 +3137,6 @@ PROCEDURE pi-load-images:
    if can-find(first tt-pdf-desenhos where tt-pdf-desenhos.nr-pdf = tt-pdf.nr-pdf no-lock) then do:
       for each tt-pdf-desenhos where tt-pdf-desenhos.nr-pdf = tt-pdf.nr-pdf no-lock:
          ASSIGN cDeCodigo = REPLACE(tt-pdf-desenhos.deCodigo, ' ':U, '_').
-         /*ASSIGN cItemDir  = tt-pdf-desenhos.nomDirDesenhos + "\" + cDeCodigo.*/
          
          ASSIGN cItemDir  = /*tt-pdf-desenhos.nomDirDesenhos*/ session:temp-dir + "desenhos\" + cDeCodigo.         
 
@@ -2781,16 +3171,10 @@ PROCEDURE pi-load-images:
                 + " -ecmurl ~"":U + tt-pdf-desenhos.ecmURL + "~""
                 + " -ecmcompany ~"":U + STRING(tt-pdf-desenhos.ecmCompany) + "~""
                 + " -ecmrootfolder ~"":U + STRING(tt-pdf-desenhos.ecmRootFolder) + "~""
-                + " -getdes ":U + (IF tt-pdf.desenvolvimento THEN "true" ELSE "false")
-                + " -getanvisa ":U + (IF tt-param.l-anvisa THEN "true" ELSE "false")
-                + " -getfda ":U + (IF tt-param.l-fda THEN "true" ELSE "false")
-                /* + " -getordem ":U + (IF NOT tt-param.l-fda AND NOT tt-param.l-anvisa THEN "true":U ELSE "false":U) */
-                + " -getcheckedout false":U
                 + " -s 2":U
                 /*+ " -cv":U*/
                 + IF NOT l-gera-log THEN " -nolog" ELSE "":U
                 + " ~"":U + tt-pdf-desenhos.deCodigo + "~"":U
-                /*+ " > ":U + cItemDir + "\":U + cDeCodigo + ".log":U*/
                 + " > ":U + SESSION:TEMP-DIRECTORY + cDeCodigo + ".log":U
                 .
 
@@ -2815,6 +3199,9 @@ PROCEDURE pi-load-images:
                         IMPORT STREAM s1 cTmp.
                         IF ENTRY(1, cTmp, "=") = "CheckedOut" THEN DO:
                             ASSIGN tt-pdf.bloqueado = (ENTRY(2, cTmp, "=") = "True":U).
+
+                            ASSIGN tt-pdf-desenhos.bloqueado = (ENTRY(2, cTmp, "=") = "True":U).
+
                             /*TODO: Descomentar quando liberar a impressao do desenho de bloqueado
                             ASSIGN  tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
                                     tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1.*/
@@ -2855,56 +3242,29 @@ PROCEDURE pi-load-images:
                     END.
                 END.
                 INPUT STREAM s1 CLOSE.
-                IF tt-pdf-desenhos.nomUrl <> ? AND tt-pdf-desenhos.nomUrl <> "":U AND NOT tt-pdf.bloqueado THEN DO:
-                    /* Vai processar a imagem */
-                    /*IF tt-pdf-desenhos.nomUrl MATCHES "*.dwf":U THEN DO:*/
-                        /* ê uma imagem em autocad */
-                        ASSIGN iTempoGasto = ETIME(YES).
-                        ASSIGN dTempoGasto = iTempoGasto / 1000.
+                IF tt-pdf-desenhos.nomUrl <> ? AND tt-pdf-desenhos.nomUrl <> "":U AND NOT tt-pdf-desenhos.bloqueado THEN DO:
 
-                        ASSIGN iDesenhoImprimir = 0.
-                        INPUT STREAM sJpg FROM OS-DIR(cItemDir).
-                        REPEAT:
-                            IMPORT STREAM sJpg cTmp cJpgFile cFileType.
-                            IF cFileType = "F":U AND SUBSTRING(cTmp, LENGTH(cTmp) - 3) = ".jpg" THEN DO:
-                                ASSIGN iDesenhoImprimir = iDesenhoImprimir + 1.
-                                IF LOOKUP(STRING(iDesenhoImprimir), cDesenhosImprimir, ",":U) > 0 THEN DO:
-                                    cDeCodigo1 = cDeCodigo + "__" + STRING(iDesenhoImprimir, "9999":U).
-                                    /*ANTES DE INTEGRAR AO ECM ASSIGN cJpgFileTmp = cJpgFile;
-                                    ASSIGN cJpgFileTmp = SESSION:TEMP-DIRECTORY + STRING(TIME) + ".jpg".
-                                    OS-COPY VALUE(cJpgFile) VALUE(cJpgFileTmp).
-                                    ASSIGN cJpgFile = cJpgFileTmp.*/
-                                    RUN pdf_load_image ("Spdf", cDeCodigo1, cJpgFile).
-                                    CREATE ttDesenhosCarregados.
-                                    ASSIGN ttDesenhosCarregados.deCodigo = cDeCodigo1.
-                        
-                                    ASSIGN  tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
-                                            tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1.
-                                END.
-                            END.
-                        END.
-                        INPUT STREAM sJpg CLOSE.
-                    /*END.
-                    ELSE IF tt-pdf-desenhos.nomUrl MATCHES "*.pdf":U THEN DO:
-                        /* ê uma imagem em PDF */
-                        DO iCount = 1 TO 20:
-                           cJpgFile   = SEARCH(cItemDir + "/page" + STRING(iCount, "9999":U) + ".jpg":U).
-                           cDeCodigo1 = cDeCodigo + "__" + STRING(iCount, "9999":U).
+                   ASSIGN iTempoGasto = ETIME(YES).
+                   ASSIGN dTempoGasto = iTempoGasto / 1000.
 
-                           IF cJpgFile = ? THEN LEAVE.
-                            ASSIGN cJpgFileTmp = SESSION:TEMP-DIRECTORY + STRING(TIME) + ".jpg".
-                            OS-COPY VALUE(cJpgFile) VALUE(cJpgFileTmp).
-                            ASSIGN cJpgFile = cJpgFileTmp.
-
-                           run pdf_load_image ("Spdf", cDeCodigo1, cJpgFile).
-
-                           CREATE ttDesenhosCarregados.
-                           ASSIGN ttDesenhosCarregados.deCodigo = cDeCodigo1.
-
-                            ASSIGN  tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
-                                    tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1.
-                        END.
-                    END.*/
+                   ASSIGN iDesenhoImprimir = 0.
+                   INPUT STREAM sJpg FROM OS-DIR(cItemDir).
+                   REPEAT:
+                       IMPORT STREAM sJpg cTmp cJpgFile cFileType.
+                       IF cFileType = "F":U AND SUBSTRING(cTmp, LENGTH(cTmp) - 3) = ".jpg" THEN DO:
+                           ASSIGN iDesenhoImprimir = iDesenhoImprimir + 1.
+                           IF LOOKUP(STRING(iDesenhoImprimir), cDesenhosImprimir, ",":U) > 0 THEN DO:
+                               cDeCodigo1 = cDeCodigo + "__" + STRING(iDesenhoImprimir, "9999":U).
+                               RUN pdf_load_image ("Spdf", cDeCodigo1, cJpgFile).
+                               CREATE ttDesenhosCarregados.
+                               ASSIGN ttDesenhosCarregados.deCodigo = cDeCodigo1.
+                   
+                               ASSIGN  tt-pdf.qt-desenhos           = tt-pdf.qt-desenhos + 1
+                                       tt-pdf.qt-paginas            = tt-pdf.qt-paginas  + 1.
+                           END.
+                       END.
+                   END.
+                   INPUT STREAM sJpg CLOSE.
                 END.
             END.
          END.
@@ -2917,3 +3277,27 @@ PROCEDURE pi-load-images:
       END.
    end.
 END PROCEDURE.
+
+PROCEDURE pi-cria-hist-ord-prod:
+
+    DEF VAR i-seq AS INT NO-UNDO.
+
+    FIND LAST hist-ord-prod NO-LOCK
+        WHERE hist-ord-prod.nr-ord-produ = ord-prod.nr-ord-produ 
+        USE-INDEX hstop_id NO-ERROR.
+    IF AVAIL hist-ord-prod THEN DO:
+        ASSIGN i-seq = hist-ord-prod.seq-hist + 1.
+    END.
+    ELSE
+        ASSIGN i-seq = 1.
+
+    CREATE hist-ord-prod.
+    ASSIGN hist-ord-prod.nr-ord-prod = ord-prod.nr-ord-produ
+           hist-ord-prod.seq-hist    = i-seq
+           hist-ord-prod.dt-inicio   = ord-prod.dt-inicio
+           hist-ord-prod.usuar-hist  = c-seg-usuario
+           hist-ord-prod.dat-hist    = TODAY
+           hist-ord-prod.hra-hist    = STRING (TIME, "HH:MM:SS")
+           hist-ord-prod.motivo      = TRIM (tt-Param.c-motivo).
+
+END.
