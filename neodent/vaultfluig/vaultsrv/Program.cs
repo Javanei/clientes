@@ -4,23 +4,12 @@ using System.Text;
 using System.IO;
 using Ionic.Zip;
 using System.Xml;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
 using System.Management;
-
 using Microsoft.Web.Services3;
-using System.Net;
 using System.Net.Mail;
-//using Autodesk.Connectivity.WebServices;
-using Autodesk.Connectivity.WebServices.DocumentSvc;
-using Autodesk.Connectivity.WebServices.PropertySvc;
-using Autodesk.Connectivity.WebServices.SecuritySvc;
-using Autodesk.Connectivity.WebServicesTools;
+using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 
-
-//using Autodesk.Connectivity.WebServices;
 using ADSK = Autodesk.Connectivity.WebServices;
-using Autodesk.Connectivity.WebServices;
 
 namespace vaultsrv
 {
@@ -41,11 +30,11 @@ namespace vaultsrv
             NotEqualTo = 10
         };*/
 
-        private static long MAX_FILE_SIZE = 45 * 1024 * 1024; // 45 MB 
+        //private static long MAX_FILE_SIZE = 45 * 1024 * 1024; // 45 MB 
 
-        private static string user = "cbueno";
-        private static string pass = "neodent1011";
-        private static string server = "vault.neodent.com.br";
+        private static string user = "integracao";
+        private static string pass = "brasil2010";
+        private static string server = "br03s059.straumann.com";
         private static string vault = "neodent";
         private static string item = null;
         private static int propid = 10;
@@ -61,7 +50,7 @@ namespace vaultsrv
         private static Dictionary<string, string> reconvert;
         private static Dictionary<string, string> reconvertNew = new Dictionary<string, string>();
         private static string pdfCommand = "p2iagent.exe";
-        private static string dwfCommand = "C:\\Arquivos de programas\\Autodesk\\Autodesk Design Review\\DesignReview.exe";
+        private static string dwfCommand = "C:\\Program Files (x86)\\Autodesk\\Autodesk Design Review\\DesignReview.exe";
         private static string imageDir = "C:\\Temp\\ImagePrinter";
         private static long[] folderIds = null;
         private static Boolean single = false;
@@ -78,18 +67,19 @@ namespace vaultsrv
         private static bool mailEnableSSL = true;
         // ECM
         static string ecmLogin = "adm";
-        static string ecmPassword = "adm";
+        static string ecmPassword = "brasil2010";
         static string ecmUser = null;
-        static string ecmURL = "http://192.168.1.106:8080/webdesk";
+        static string ecmURL = "http://fabsvms009.neodent.com.br:8080/webdesk";
         static int ecmCompany = 1;
-        static int ecmRootFolder = 5;
+        static int ecmRootFolder = 131834;
         static bool ecmEnabled = false;
         static bool ecmDownload = false;
         static bool ecmDelJpg = false;
         static ECM ecm;
         static Boolean ecmUpload = true;
         static Boolean ecmProxy = true;
-        static WebServiceManager serviceManager = (WebServiceManager)null;
+        static ADSKTools.WebServiceManager serviceManager = (ADSKTools.WebServiceManager)null;
+        static DownloadFast downloadFast = null;
         // Controla se está imprimindo os desenhos de desenv
         static Boolean lDesenv = false;
         // Controla se está imprimento os desenhos de preset
@@ -127,7 +117,7 @@ namespace vaultsrv
             //config = ReadPropertyFile(Directory.GetCurrentDirectory() + "\\vaultsrv.conf");
             LOG.imprimeLog(System.DateTime.Now + " === Vai ler o arquivo de configuracao=" + downdir + "vaultsrv.conf");
             config = Util.ReadPropertyFile(downdir + "vaultsrv.conf");
-            if (config != null)
+            if (config != null && config.Count > 0)
             {
                 LOG.imprimeLog(System.DateTime.Now + " ============ VAULTSRV.CONF ENCONTRADO");
                 mailPort = Util.GetProperty(config, "mailPort") != null ? System.Convert.ToInt32(Util.GetProperty(config, "mailPort"), 10) : 0;
@@ -138,9 +128,14 @@ namespace vaultsrv
                 mailTO = Util.GetProperty(config, "mailTO");
                 mailEnableSSL = Util.GetProperty(config, "mailEnableSSL") != null && Util.GetProperty(config, "mailEnableSSL").Equals("true");
             }
+            else
+            {
+                LOG.imprimeLog(System.DateTime.Now + " ============ VAULTSRV.CONF [NAO] ENCONTRADO");
+            }
 
             // Le arquivo com as imagens que apresentaram erro na conversao.
             reconvert = Util.ReadPropertyFile("reconvert.conf");
+            LOG.imprimeLog(System.DateTime.Now + " ============ Itens para reconverter: " + reconvert.Count);
 
             Util.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
 
@@ -159,192 +154,192 @@ namespace vaultsrv
                     }
                     else
                         if (args[i].Equals("-ecmuser") && i < (args.Length - 1))
-                        {
-                            ecmUser = args[++i];
-                        }
-                        else
+                    {
+                        ecmUser = args[++i];
+                    }
+                    else
                             if (args[i].Equals("-ecmpassword") && i < (args.Length - 1))
-                            {
-                                ecmPassword = args[++i];
-                            }
-                            else
+                    {
+                        ecmPassword = args[++i];
+                    }
+                    else
                                 if (args[i].Equals("-ecmurl") && i < (args.Length - 1))
-                                {
-                                    ecmURL = args[++i];
-                                }
-                                else
+                    {
+                        ecmURL = args[++i];
+                    }
+                    else
                                     if (args[i].Equals("-ecmcompany") && i < (args.Length - 1))
-                                    {
-                                        ecmCompany = System.Convert.ToInt32(args[++i], 10);
-                                    }
-                                    else
+                    {
+                        ecmCompany = System.Convert.ToInt32(args[++i], 10);
+                    }
+                    else
                                         if (args[i].Equals("-ecmrootfolder") && i < (args.Length - 1))
-                                        {
-                                            ecmRootFolder = System.Convert.ToInt32(args[++i], 10);
-                                        }
-                                        else
+                    {
+                        ecmRootFolder = System.Convert.ToInt32(args[++i], 10);
+                    }
+                    else
                                             if (args[i].Equals("-ecmdeljpg"))
-                                            {
-                                                ecmDelJpg = true;
-                                            }
-                                            else
+                    {
+                        ecmDelJpg = true;
+                    }
+                    else
 
                                                 if (args[i].Equals("-i") && i < (args.Length - 1))
-                                                {
-                                                    propid = System.Convert.ToInt32(args[++i], 10);
-                                                }
-                                                else
+                    {
+                        propid = System.Convert.ToInt32(args[++i], 10);
+                    }
+                    else
                                                     if (args[i].Equals("-u") && i < (args.Length - 1))
-                                                    {
-                                                        user = args[++i];
-                                                    }
-                                                    else
+                    {
+                        user = args[++i];
+                    }
+                    else
                                                         if (args[i].Equals("-p") && i < (args.Length - 1))
-                                                        {
-                                                            pass = args[++i];
-                                                        }
-                                                        else
+                    {
+                        pass = args[++i];
+                    }
+                    else
                                                             if (args[i].Equals("-imagetype") && i < (args.Length - 1))
-                                                            {
-                                                                if (args[++i].ToLower().Equals("anvisa"))
-                                                                    imageType = "ANVISA_";
-                                                                else if (args[++i].ToLower().Equals("fda"))
-                                                                    imageType = "FDA_";
-                                                                else if (args[++i].ToLower().Equals("des"))
-                                                                    imageType = "DES_";
-                                                                pass = args[++i];
-                                                            }
-                                                            else
+                    {
+                        if (args[++i].ToLower().Equals("anvisa"))
+                            imageType = "ANVISA_";
+                        else if (args[++i].ToLower().Equals("fda"))
+                            imageType = "FDA_";
+                        else if (args[++i].ToLower().Equals("des"))
+                            imageType = "DES_";
+                        pass = args[++i];
+                    }
+                    else
                                                                 if (args[i].Equals("-h") && i < (args.Length - 1))
-                                                                {
-                                                                    server = args[++i];
-                                                                }
-                                                                else
+                    {
+                        server = args[++i];
+                    }
+                    else
                                                                     if (args[i].Equals("-v") && i < (args.Length - 1))
-                                                                    {
-                                                                        vault = args[++i];
-                                                                    }
-                                                                    else
+                    {
+                        vault = args[++i];
+                    }
+                    else
                                                                         if (args[i].Equals("-s") && i < (args.Length - 1))
-                                                                        {
-                                                                            searchType = System.Convert.ToInt32(args[++i], 10);
-                                                                        }
-                                                                        else
+                    {
+                        searchType = System.Convert.ToInt32(args[++i], 10);
+                    }
+                    else
                                                                             if (args[i].Equals("-printer"))
-                                                                            {
-                                                                                if (i < args.Length - 1)
-                                                                                {
-                                                                                    printerName = args[++i];
-                                                                                }
-                                                                            }
-                                                                            else
+                    {
+                        if (i < args.Length - 1)
+                        {
+                            printerName = args[++i];
+                        }
+                    }
+                    else
                                                                                 if (args[i].Equals("-single"))
-                                                                                {
-                                                                                    single = true;
-                                                                                }
-                                                                                else
+                    {
+                        single = true;
+                    }
+                    else
                                                                                     if (args[i].Equals("-d") && i < (args.Length - 1))
-                                                                                    {
-                                                                                        downdir = args[++i];
-                                                                                        if (!downdir.EndsWith("\\"))
-                                                                                        {
-                                                                                            downdir = downdir + "\\";
-                                                                                        }
-                                                                                    }
-                                                                                    else
+                    {
+                        downdir = args[++i];
+                        if (!downdir.EndsWith("\\"))
+                        {
+                            downdir = downdir + "\\";
+                        }
+                    }
+                    else
                                                                                         if (args[i].Equals("-nd"))
-                                                                                        {
-                                                                                            download = false;
-                                                                                        }
-                                                                                        else
+                    {
+                        download = false;
+                    }
+                    else
                                                                                             if (args[i].Equals("-la"))
-                                                                                            {
-                                                                                                listall = true;
-                                                                                            }
-                                                                                            else
+                    {
+                        listall = true;
+                    }
+                    else
                                                                                                 if (args[i].Equals("-ci"))
-                                                                                                {
-                                                                                                    if (i < args.Length - 1)
-                                                                                                    {
-                                                                                                        checkInDate = args[++i];
-                                                                                                    }
-                                                                                                    else
-                                                                                                    {
-                                                                                                        checkInDate = Util.GetProperty(config, "LastCheckInDate");
-                                                                                                        if (checkInDate == null || checkInDate == "")
-                                                                                                        {
-                                                                                                            checkInDate = new DateTime(1980 /*agora.Year*/, 1 /*agora.Month*/, 1 /*agora.Day*/, 0 /*agora.Hour*/, 0 /*agora.Minute*/, 0 /*agora.Second*/, 0 /*agora.Millisecond*/).ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss");
-                                                                                                        }
-                                                                                                    }
-                                                                                                    Util.SetProperty(config, "LastCheckInDate", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
-                                                                                                }
-                                                                                                else
+                    {
+                        if (i < args.Length - 1)
+                        {
+                            checkInDate = args[++i];
+                        }
+                        else
+                        {
+                            checkInDate = Util.GetProperty(config, "LastCheckInDate");
+                            if (checkInDate == null || checkInDate == "")
+                            {
+                                checkInDate = new DateTime(1980 /*agora.Year*/, 1 /*agora.Month*/, 1 /*agora.Day*/, 0 /*agora.Hour*/, 0 /*agora.Minute*/, 0 /*agora.Second*/, 0 /*agora.Millisecond*/).ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss");
+                            }
+                        }
+                        Util.SetProperty(config, "LastCheckInDate", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
+                    }
+                    else
                                                                                                     if (args[i].Equals("-cv"))
-                                                                                                    {
-                                                                                                        converter = true;
-                                                                                                        download = true;
-                                                                                                    }
-                                                                                                    else
+                    {
+                        converter = true;
+                        download = true;
+                    }
+                    else
                                                                                                         if (args[i].Equals("-del"))
-                                                                                                        {
-                                                                                                            delFiles = true;
-                                                                                                        }
-                                                                                                        else
+                    {
+                        delFiles = true;
+                    }
+                    else
                                                                                                             if (args[i].Equals("-nolog"))
-                                                                                                            {
-                                                                                                                LOG.geraLog = false;
-                                                                                                            }
-                                                                                                            else
+                    {
+                        LOG.geraLog = false;
+                    }
+                    else
                                                                                                                 if (args[i].Equals("-imgdir"))
-                                                                                                                {
-                                                                                                                    if (i < args.Length - 1)
-                                                                                                                    {
-                                                                                                                        imageDir = args[++i];
-                                                                                                                    }
-                                                                                                                }
-                                                                                                                else
+                    {
+                        if (i < args.Length - 1)
+                        {
+                            imageDir = args[++i];
+                        }
+                    }
+                    else
                                                                                                                     if (args[i].Equals("-dreview"))
-                                                                                                                    {
-                                                                                                                        if (i < args.Length - 1)
-                                                                                                                        {
-                                                                                                                            dwfCommand = args[++i];
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                    else
+                    {
+                        if (i < args.Length - 1)
+                        {
+                            dwfCommand = args[++i];
+                        }
+                    }
+                    else
                                                                                                                         if (args[i].Equals("-audit"))
-                                                                                                                        {
-                                                                                                                            lAudit = true;
-                                                                                                                            listall = true;
-                                                                                                                        }
-                                                                                                                        else
+                    {
+                        lAudit = true;
+                        listall = true;
+                    }
+                    else
                                                                                                                             if (args[i].Equals("-getdes") && i < (args.Length - 1))
-                                                                                                                            {
-                                                                                                                                getdes = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
-                                                                                                                            }
-                                                                                                                            else
+                    {
+                        getdes = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
+                    }
+                    else
                                                                                                                                 if (args[i].Equals("-getanvisa") && i < (args.Length - 1))
-                                                                                                                                {
-                                                                                                                                    getanvisa = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
-                                                                                                                                }
-                                                                                                                                else
+                    {
+                        getanvisa = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
+                    }
+                    else
                                                                                                                                     if (args[i].Equals("-getfda") && i < (args.Length - 1))
-                                                                                                                                    {
-                                                                                                                                        getfda = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
-                                                                                                                                    }
-                                                                                                                                    else
-                                                                                                                                        /*if (args[i].Equals("-getordem") && i < (args.Length - 1))
-                                                                                                                                        {
-                                                                                                                                            getordem = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
-                                                                                                                                        }
-                                                                                                                                        else*/
+                    {
+                        getfda = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
+                    }
+                    else
+                                                                                                                                            /*if (args[i].Equals("-getordem") && i < (args.Length - 1))
+                                                                                                                                            {
+                                                                                                                                                getordem = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
+                                                                                                                                            }
+                                                                                                                                            else*/
                                                                                                                                             if (args[i].Equals("-getcheckedout") && i < (args.Length - 1))
-                                                                                                                                            {
-                                                                                                                                                getcheckedout = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
-                                                                                                                                            }
-                                                                                                                                            else
-                                                                                                                                            {
-                                                                                                                                                item = args[i];
-                                                                                                                                            }
+                    {
+                        getcheckedout = args[++i].ToLower().Equals("true") || args[i].ToLower().Equals("yes");
+                    }
+                    else
+                    {
+                        item = args[i];
+                    }
                 }
             }
 
@@ -384,7 +379,15 @@ namespace vaultsrv
             {
                 if (!ecmDownload)
                 {
-                    serviceManager = new WebServiceManager((IWebServiceCredentials)new UserPasswordCredentials(Program.server, Program.vault, Program.user, Program.pass, true));
+                    ADSK.ServerIdentities si = new ADSK.ServerIdentities();
+                    si.DataServer = Program.server;
+                    si.FileServer = Program.server;
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Vai logar no Vault no servidor [" + Program.server + "], database [" + Program.vault + "], usuario [" + Program.user + "]");
+                    ADSKTools.IWebServiceCredentials login = new ADSKTools.UserPasswordCredentials(si, Program.vault, Program.user, Program.pass);
+                    serviceManager = new ADSKTools.WebServiceManager(login);
+                    //serviceManager = new ADSKTools.WebServiceManager((ADSKTools.IWebServiceCredentials)new ADSKTools.UserPasswordCredentials(si, Program.vault, Program.user, Program.pass, true));
+                    downloadFast = new DownloadFast(serviceManager, Program.user, Program.pass, Program.vault, serviceManager.AdminService.SecurityHeader.UserId, Program.server);
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Conexao com o Vault OK");
                 }
                 /* Efetua o Login */
                 /*imprimeLog("====== Usuario.: " + user);
@@ -394,6 +397,7 @@ namespace vaultsrv
 
                 if (ecmEnabled)
                 {
+                    LOG.imprimeLog(System.DateTime.Now + " ==== Vai conectar no ECM na URL [" + ecmURL + "], usuario [" + ecmUser + "]");
                     ecm = new ECM(ecmLogin, ecmPassword, ecmUser, ecmURL, ecmCompany, ecmRootFolder, imageDir, ecmUpload, ecmProxy);
                     if (ecm == null)
                     {
@@ -414,7 +418,7 @@ namespace vaultsrv
                     LOG.imprimeLog(System.DateTime.Now + " ==== Baixar ANVISA....: " + getanvisa);
                     LOG.imprimeLog(System.DateTime.Now + " ==== Baixar FDA.......: " + getfda);
                     LOG.imprimeLog(System.DateTime.Now + " ==== Baixar CheckedOut: " + getcheckedout);
-                    
+
                     try
                     {
                         string DeCodigo = item.Replace(' ', '_');
@@ -436,8 +440,8 @@ namespace vaultsrv
                 else
                 {
                     LOG.imprimeLog(System.DateTime.Now + " === Vai baixar do Vault");
-                    LoginInfo loginInfo = new LoginInfo(Program.user, Program.pass, Program.server, Program.vault);
-                    DocumentService documentService = serviceManager.DocumentService;
+                    //LoginInfo loginInfo = new LoginInfo(Program.user, Program.pass, Program.server, Program.vault);
+                    ADSK.DocumentService documentService = serviceManager.DocumentService;
 
                     ADSK.Folder[] fld = documentService.FindFoldersByPaths(new string[] { "$/Neodent/Produção" });
                     //ADSK.Folder[] fldDesenv = documentService.FindFoldersByPaths(new string[] { "$/Neodent/Engenharia" });
@@ -695,7 +699,8 @@ namespace vaultsrv
                                                 if (!auditIt.checkedOut.Equals(auditIt.fluigCheckedOut))
                                                 {
                                                     auditIt.message = "Status checkout diferente";
-                                                } else if (!auditIt.checkinDate.Equals(auditIt.fluigCheckinDate))
+                                                }
+                                                else if (!auditIt.checkinDate.Equals(auditIt.fluigCheckinDate))
                                                 {
                                                     auditIt.message = "Data de checkin diferente";
                                                 }
@@ -721,7 +726,7 @@ namespace vaultsrv
                                         {
                                             DeleteFilesFromDir(ItemDir);
                                             LOG.imprimeLog(System.DateTime.Now + " ==== Limpou diretorio=" + ItemDir);
-                                            DownloadFile(fileDown, ItemFile, documentService);
+                                            DownloadFile(fileDown, ItemFile, ItemDir, documentService);
                                             LOG.imprimeLog(System.DateTime.Now + " ==== Baixou arquivo=" + ItemFile);
                                             if (ItemFile.ToLower().EndsWith(".dwf"))
                                             {
@@ -1074,7 +1079,8 @@ namespace vaultsrv
             catch (Exception ex)
             {
                 LOG.imprimeLog(System.DateTime.Now + " Error=" + ex.Message);
-                LOG.imprimeLog("StackTrace: " + ex.StackTrace);
+                LOG.imprimeLog("StackTrace:");
+                LOG.imprimeLog(ex.StackTrace);
                 erro = true;
                 sendMail("ERRO convertendo desenhos", ex.Message);
             }
@@ -1120,7 +1126,7 @@ namespace vaultsrv
             Util.SetProperty(d, "FileSize", file.FileSize.ToString());
             Util.SetProperty(d, "FileStatus", file.FileStatus.ToString());
             Util.SetProperty(d, "ModDate", file.ModDate.ToString());
-            Util.SetProperty(d, "CkOutFolderId", file.CkOutFolderId.ToString());
+            //Removed in 2018 Util.SetProperty(d, "CkOutFolderId", file.CkOutFolderId.ToString());
             Util.SetProperty(d, "CkOutMach", file.CkOutMach);
             Util.SetProperty(d, "CkOutSpec", file.CkOutSpec);
             Util.SetProperty(d, "CkOutUserId", file.CkOutUserId.ToString());
@@ -1137,7 +1143,7 @@ namespace vaultsrv
             Util.WritePropertyFile(filename, d);
         }
 
-        public static List<ADSK.File> findByCheckinDate(DocumentService documentService, String checkinDate)
+        public static List<ADSK.File> findByCheckinDate(ADSK.DocumentService documentService, String checkinDate)
         {
             LOG.imprimeLog(System.DateTime.Now + " ===== findByCheckinDate: [" + checkinDate + "]");
             List<ADSK.File> fileList = new List<ADSK.File>();
@@ -1398,7 +1404,7 @@ namespace vaultsrv
             return fileList;
         }
 
-        public static List<ADSK.File> findByEquals(_DocumentService documentService, string filename)
+        public static List<ADSK.File> findByEquals(ADSK.DocumentService documentService, string filename)
         {
             /* Faz a pesquisa */
             string bookmark = string.Empty;
@@ -1438,7 +1444,7 @@ namespace vaultsrv
             return fileList;
         }
 
-        public static List<ADSK.File> findByMatches(_DocumentService documentService, String sfind)
+        public static List<ADSK.File> findByMatches(ADSK.DocumentService documentService, String sfind)
         {
             /* Faz a pesquisa */
             string bookmark = string.Empty;
@@ -1478,10 +1484,10 @@ namespace vaultsrv
          */
         public static void RunCommandListAll()
         {
-            DocumentService documentService = serviceManager.DocumentService;
+            ADSK.DocumentService documentService = serviceManager.DocumentService;
             try
             {
-                Program.PrintFilesInFolder(((_DocumentService)documentService).GetFolderRoot(), documentService);
+                Program.PrintFilesInFolder(((ADSK.DocumentService)documentService).GetFolderRoot(), documentService);
             }
             catch (Exception ex)
             {
@@ -1516,7 +1522,7 @@ namespace vaultsrv
         /**
          * Faz o download de um arquivo.
          */
-        public static void DownloadFile(ADSK.File file, string filePath, ADSK.DocumentService docSvc)
+        public static void DownloadFile(ADSK.File file, string filePath, string itemDir, ADSK.DocumentService docSvc)
         {
             //Console.WriteLine("Downloading " + file.Name + " - Para o arquivo " + filePath);
 
@@ -1524,21 +1530,39 @@ namespace vaultsrv
             if (System.IO.File.Exists(filePath))
                 System.IO.File.SetAttributes(filePath, FileAttributes.Normal);
 
+            /*
             if (file.FileSize > MAX_FILE_SIZE)
                 DownloadFileLarge(file, filePath, docSvc);
             else
                 DownloadFileStandard(file, filePath, docSvc);
+            */
+
+            downloadFast.DownloadFile(file, itemDir);
+            /*
+            using (FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite))
+            {
+                byte[] fileData = null;
+                DownloadSlow.DownloadFile(serviceManager, file.Id, true, out fileData);
+                stream.Write(fileData, 0, fileData.Length);
+                stream.Flush();
+                stream.Close();
+                stream.Dispose();
+            }
+            */
 
             // set the file to read-only
             //TODO: pq isso ta aqui??? System.IO.File.SetAttributes(filePath, FileAttributes.ReadOnly);
         }
 
+        /*
         private static void DownloadFileStandard(ADSK.File file, string filePath, ADSK.DocumentService docSvc)
         {
+            byte[] fileData = null;
+            DownloadSlow.DownloadFile(serviceManager, file.Id, true, out fileData);
             using (FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite))
             {
                 byte[] fileData;
-                ByteArray byteArray = new ByteArray();
+                ADSK.ByteArray byteArray = new ADSK.ByteArray();
                 docSvc.DownloadFile((long)file.Id, true, out byteArray);
                 fileData = (byte[])byteArray.Bytes;
                 stream.Write(fileData, 0, fileData.Length);
@@ -1547,7 +1571,9 @@ namespace vaultsrv
                 stream.Dispose();
             }
         }
+        */
 
+        /*
         private static void DownloadFileLarge(ADSK.File file, string filePath, ADSK.DocumentService docSvc)
         {
             if (System.IO.File.Exists(filePath))
@@ -1573,6 +1599,7 @@ namespace vaultsrv
                 stream.Close();
             }
         }
+        */
 
         /**
          * Exclui um arquivo do sistema de arquivos.
@@ -1665,20 +1692,20 @@ namespace vaultsrv
                     }
                     else
                         if (f.ToLower().EndsWith(".jpg"))
+                    {
+                        if (f.ToLower().IndexOf(it.fileDown.Name.ToLower()) > 0)
                         {
-                            if (f.ToLower().IndexOf(it.fileDown.Name.ToLower()) > 0)
-                            {
-                                achou = true;
-                                //imageDir, ItemDir, DeCodigo, delFiles, ren && !fileDown.Name.EndsWith(".pdf")
-                                cont++;
-                                string newf = it.ItemDir + "\\" + it.DeCodigo + "-" + cont + ".jpg";
-                                LOG.imprimeLog(System.DateTime.Now + " ==== Renomeando " + f + " para " + newf);
-                                System.IO.File.Copy(f, newf, true);
-                                DeleteFile(f);
-                                //File.Move(f, newf);
-                                LOG.imprimeLog(System.DateTime.Now + " ==== Renomeado?: " + System.IO.File.Exists(newf));
-                            }
+                            achou = true;
+                            //imageDir, ItemDir, DeCodigo, delFiles, ren && !fileDown.Name.EndsWith(".pdf")
+                            cont++;
+                            string newf = it.ItemDir + "\\" + it.DeCodigo + "-" + cont + ".jpg";
+                            LOG.imprimeLog(System.DateTime.Now + " ==== Renomeando " + f + " para " + newf);
+                            System.IO.File.Copy(f, newf, true);
+                            DeleteFile(f);
+                            //File.Move(f, newf);
+                            LOG.imprimeLog(System.DateTime.Now + " ==== Renomeado?: " + System.IO.File.Exists(newf));
                         }
+                    }
                 }
             }
             if (!achou)
@@ -1711,81 +1738,89 @@ namespace vaultsrv
                     }
                     else
                         if (f.ToLower().EndsWith(".jpg"))
+                    {
+                        if (ren)
                         {
-                            if (ren)
+                            cont++;
+                            string newf = destDir + "\\" + basename + "-" + cont + ".jpg";
+                            LOG.imprimeLog(System.DateTime.Now + " =========== DeleteRenameFilesFromDir - Renomeando " + f + " para " + newf);
+                            Boolean bwhile = true;
+                            int contErros = 0;
+                            bool bOk = true;
+                            while (bwhile)
                             {
-                                cont++;
-                                string newf = destDir + "\\" + basename + "-" + cont + ".jpg";
-                                LOG.imprimeLog(System.DateTime.Now + " =========== DeleteRenameFilesFromDir - Renomeando " + f + " para " + newf);
-                                Boolean bwhile = true;
-                                int contErros = 0;
-                                bool bOk = true;
-                                while (bwhile)
+                                try
                                 {
-                                    try
+                                    if (System.IO.File.Exists(newf))
                                     {
-                                        if (System.IO.File.Exists(newf))
+                                        LOG.imprimeLog(System.DateTime.Now + " =========== DeleteRenameFilesFromDir - vai excluir: " + newf);
+                                        if (!DeleteFile(newf))
                                         {
-                                            LOG.imprimeLog(System.DateTime.Now + " =========== DeleteRenameFilesFromDir - vai excluir: " + newf);
+                                            throw new Exception("Nao conseguiu excluir o arquivo antigo");
+                                        }
+                                    }
+                                    System.IO.File.Copy(f, newf, true);
+                                    if (!DeleteFile(f))
+                                    {
+                                        LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + f + "', pode dar problema em outro momento");
+                                    }
+                                    //File.Move(f, newf);
+                                    bwhile = false;
+                                    if (ecmEnabled)
+                                    {
+                                        LOG.imprimeLog(System.DateTime.Now + " =========== DeleteRenameFilesFromDir - Vai fazer upload para o ECM (" + basename + ", " + newf);
+                                        try
+                                        {
+                                            ecm.updateECMDocument(basename, newf);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            DeleteFilesFromDir(dir);
+                                            throw ex;
+                                        }
+
+                                        // Exclui o jpg quando publicado no ECM.
+                                        if (ecmDelJpg)
+                                        {
+                                            LOG.imprimeLog(System.DateTime.Now + " ============= DeleteRenameFilesFromDir - vai excluir: " + newf);
                                             if (!DeleteFile(newf))
                                             {
-                                                throw new Exception("Nao conseguiu excluir o arquivo antigo");
+                                                LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + newf + "', pode dar problema em outro momento");
                                             }
-                                        }
-                                        System.IO.File.Copy(f, newf, true);
-                                        if (!DeleteFile(f))
-                                        {
-                                            LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + f + "', pode dar problema em outro momento");
-                                        }
-                                        //File.Move(f, newf);
-                                        bwhile = false;
-                                        if (ecmEnabled)
-                                        {
-                                            LOG.imprimeLog(System.DateTime.Now + " =========== DeleteRenameFilesFromDir - Vai fazer upload para o ECM (" + basename + ", " + newf);
-                                            ecm.updateECMDocument(basename, newf);
-
-                                            // Exclui o jpg quando publicado no ECM.
-                                            if (ecmDelJpg)
-                                            {
-                                                LOG.imprimeLog(System.DateTime.Now + " ============= DeleteRenameFilesFromDir - vai excluir: " + newf);
-                                                if (!DeleteFile(newf))
-                                                {
-                                                    LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + newf + "', pode dar problema em outro momento");
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        LOG.imprimeLog(System.DateTime.Now + " ==== " + ex.Message);
-                                        contErros++;
-                                        if (contErros > 30)
-                                        {
-                                            LOG.imprimeLog(System.DateTime.Now + " ======== Arquivo ignorado, estourou o limite de RENAME");
-                                            bOk = false;
-                                        }
-                                        else
-                                        {
-                                            System.Threading.Thread.Sleep(1000);
                                         }
                                     }
                                 }
-                                LOG.imprimeLog(System.DateTime.Now + " ==== Renomeado?: " + System.IO.File.Exists(newf));
-                                if (!bOk)
+                                catch (Exception ex)
                                 {
-                                    throw new Exception("Nao conseguiu mover o arquivo '" + f + "' para o arquivo '" + newf + "'");
+                                    LOG.imprimeLog(System.DateTime.Now + " ==== " + ex.Message);
+                                    contErros++;
+                                    if (contErros > 30)
+                                    {
+                                        LOG.imprimeLog(System.DateTime.Now + " ======== Arquivo ignorado, estourou o limite de RENAME");
+                                        bOk = false;
+                                    }
+                                    else
+                                    {
+                                        System.Threading.Thread.Sleep(1000);
+                                    }
                                 }
+                            }
+                            LOG.imprimeLog(System.DateTime.Now + " ==== Renomeado?: " + System.IO.File.Exists(newf));
+                            if (!bOk)
+                            {
+                                throw new Exception("Nao conseguiu mover o arquivo '" + f + "' para o arquivo '" + newf + "'");
                             }
                         }
-                        else
+                    }
+                    else
                             if (del)
-                            {
-                                LOG.imprimeLog(System.DateTime.Now + " =============== DeleteRenameFilesFromDir - vai excluir - f=" + f);
-                                if (!DeleteFile(f))
-                                {
-                                    LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + f + "', pode dar problema em outro momento");
-                                }
-                            }
+                    {
+                        LOG.imprimeLog(System.DateTime.Now + " =============== DeleteRenameFilesFromDir - vai excluir - f=" + f);
+                        if (!DeleteFile(f))
+                        {
+                            LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + f + "', pode dar problema em outro momento");
+                        }
+                    }
                 }
             }
 
@@ -1798,13 +1833,13 @@ namespace vaultsrv
                 }
                 else
                     if (del)
+                {
+                    LOG.imprimeLog(System.DateTime.Now + " =============== DeleteRenameFilesFromDir - vai excluir restante - f=" + f);
+                    if (!DeleteFile(f))
                     {
-                        LOG.imprimeLog(System.DateTime.Now + " =============== DeleteRenameFilesFromDir - vai excluir restante - f=" + f);
-                        if (!DeleteFile(f))
-                        {
-                            LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + f + "', pode dar problema em outro momento");
-                        }
+                        LOG.imprimeLog(System.DateTime.Now + " =========== WARN: DeleteRenameFilesFromDir - nao conseguiu excluir '" + f + "', pode dar problema em outro momento");
                     }
+                }
             }
         }
 

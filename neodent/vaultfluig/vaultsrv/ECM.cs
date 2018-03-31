@@ -68,7 +68,8 @@ namespace vaultsrv
                 LOG.imprimeLog("WARN: Algo saiu errado, nao conseguiu achar a pasta raiz, faz pausa e tenta novamente.");
                 pause();
                 rootFolder = getECMRootFolder();
-                if (rootFolder == null) {
+                if (rootFolder == null)
+                {
                     LOG.imprimeLog("ERRO: Algo saiu errado, nao conseguiu achar a pasta raiz, faz pausa e tenta novamente.");
                 }
             }
@@ -274,7 +275,8 @@ namespace vaultsrv
                             {
                                 foreach (int key in fileNumList)
                                 {
-                                    if (files[i].phisicalFile.ToLower().Equals(itemCode.ToLower() + "-" + key + ".jpg")) {
+                                    if (files[i].phisicalFile.ToLower().Equals(itemCode.ToLower() + "-" + key + ".jpg"))
+                                    {
                                         baixar = true;
                                         break;
                                     }
@@ -310,7 +312,9 @@ namespace vaultsrv
                             {
                                 LOG.imprimeLog(System.DateTime.Now + " ====== Arquivo do Fluig sendo ignorado: " + files[i].phisicalFile);
                             }
-                        } else {
+                        }
+                        else
+                        {
                             LOG.imprimeLog(System.DateTime.Now + " ====== Outro arquivo Fluig: " + files[i].documentType + " -> " + files[i].phisicalFile);
                         }
                     }
@@ -324,6 +328,7 @@ namespace vaultsrv
          */
         private void uploadECMDocument(ECMFolderService.documentDto folder, string filePath)
         {
+            LOG.imprimeLog(System.DateTime.Now + " ======= Upload de arquivo para o fluig: Pasta=" + folder.documentId + ", Arquivo fisico=" + filePath);
             //TODO: Tratar para mandar pro ECM apenas os desenhos que devem ser impressos.
             string fileName = filePath.Substring(filePath.LastIndexOf("\\") + 1);
 
@@ -335,6 +340,7 @@ namespace vaultsrv
             fs.Read(filebytes, 0, Convert.ToInt32(fs.Length));
             fs.Close();
             fs.Dispose();
+            LOG.imprimeLog(System.DateTime.Now + " ======= Upload de arquivo para o fluig: Nome do arquivo=" + fileName + ", Tamanho=" + filebytes.Length);
 
             //string base64String = System.Convert.ToBase64String(filebytes, 0, filebytes.Length);
             //System.Text.UTF8Encoding UTF8 = new System.Text.UTF8Encoding();
@@ -352,8 +358,20 @@ namespace vaultsrv
             if (exist == null)
             {
                 // Arquivo novo, cria.
-                LOG.imprimeLog(System.DateTime.Now + " ======= Criando um novo arquivo no Fluig: " + fileName);
-                docService.createSimpleDocument(ecmLogin, ecmPassword, ecmCompany, folder.documentId, ecmUser, fileName, attach);
+                LOG.imprimeLog(System.DateTime.Now + " ======= Criando um novo arquivo no Fluig: [" + fileName + "] na pasta [" + folder.documentId + "]");
+                ECMDocService.webServiceMessage[] result = docService.createSimpleDocument(ecmLogin, ecmPassword, ecmCompany, folder.documentId, ecmUser, fileName, attach);
+                if (result == null || result.Length == 0 || result[0].documentId == 0)
+                {
+                    LOG.imprimeLog(System.DateTime.Now + " ======= WARN: Falhou upload do documento. Tentando novamente.");
+                    result = docService.createSimpleDocument(ecmLogin, ecmPassword, ecmCompany, folder.documentId, ecmUser, fileName, attach);
+                    if (result == null || result.Length == 0 || result[0].documentId == 0)
+                    {
+                        LOG.imprimeLog(System.DateTime.Now + " ======= ERRO: Falhou upload do documento.");
+                        throw new Exception("Nao conseguiu fazer upload para o Fluig do arquivo '" + filePath + "'");
+                    }
+                }
+                LOG.imprimeLog(System.DateTime.Now + " ======= Arquivo criado no Fluig: [" + fileName
+                    + "] na pasta [" + folder.documentId + "] com ID [" + result[0].documentId + "]");
             }
             else
             {
