@@ -9,3 +9,6 @@ neodent/ecmfiles/ecmfiles/obj/
 neodent/progress/esp/ecmfiles.exe.config
 neodent/progress/esp/lbia01792
 neodent/vaultfluig/.vs
+**/.vs/
+**/bin/
+**/obj/
