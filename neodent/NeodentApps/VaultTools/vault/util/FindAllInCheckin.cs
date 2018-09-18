@@ -5,29 +5,24 @@ using ADSK = Autodesk.Connectivity.WebServices;
 
 namespace VaultTools.vault.util
 {
-    /// <summary>
-    /// Busca de arquivos com data de checkin posterior a data informada.
-    /// </summary>
-    class FindByCheckinDate
+    class FindAllInCheckin
     {
-        public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager, string[] baseRepositories,
-            string[] validExt, String checkinDate)
+        public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager, string[] baseRepositories, string[] validExt)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 1 - (checkinDate=" + checkinDate + ")");
+            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
 
-            //LOG.imprimeLog(System.DateTime.Now + " ===== findByCheckinDate: [" + checkinDate + "]");
             List<ADSK.File> fileList = new List<ADSK.File>();
             List<ADSK.File> fileListTmp = new List<ADSK.File>();
             List<string> allf = new List<string>();
             long[] folderIds = GetFoldersId.Get(documentService, baseRepositories);
-            long propid;
 
-            ADSK.PropDef prop = VaultUtil.GetPropertyDefinition(serviceManager, "CheckInDate");
-            if (prop != null)
+            ADSK.PropDef propClientFileName = VaultUtil.GetPropertyDefinition(serviceManager, "ClientFileName");
+            ADSK.PropDef propCheckInDate = VaultUtil.GetPropertyDefinition(serviceManager, "CheckInDate");
+            ADSK.PropDef propCheckoutUserName = VaultUtil.GetPropertyDefinition(serviceManager, "CheckoutUserName");
+            if (propClientFileName != null)
             {
                 fileListTmp = new List<ADSK.File>();
-                propid = (int)prop.Id;
                 /* Faz a pesquisa */
                 string bookmark = string.Empty;
                 ADSK.SrchStatus status = null;
@@ -36,21 +31,31 @@ namespace VaultTools.vault.util
                 sort[0] = new ADSK.SrchSort
                 {
                     SortAsc = true,
-                    PropDefId = propid
+                    PropDefId = (int)propCheckInDate.Id
                 };
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[1];
+
+                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + 1];
+                //Condição para filtrar apenas os que não estiverem em checkout
                 conditions[0] = new ADSK.SrchCond
                 {
-                    SrchOper = Condition.GREATER_THAN_OR_EQUAL.Code /*(long)SrchOperator.GreatherThan*/,
-                    SrchTxt = checkinDate,
+                    SrchOper = Condition.IS_EMPTY.Code,
                     PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = propid,
+                    PropDefId = (int)propCheckoutUserName.Id,
                     SrchRule = ADSK.SearchRuleType.Must
                 };
+                for (int i = 0; i < validExt.Length; i++)
+                {
+                    conditions[i + 1] = new ADSK.SrchCond
+                    {
+                        SrchOper = Condition.CONTAINS.Code,
+                        SrchTxt = validExt[i],
+                        PropTyp = ADSK.PropertySearchType.SingleProperty,
+                        PropDefId = (int)propClientFileName.Id,
+                        SrchRule = ADSK.SearchRuleType.May
+                    };
+                }
 
-                //prop = VaultUtil.GetPropertyDefinition(serviceManager, "ClientFileName");
-
-                NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 2 - Total encontrados=" + status.TotalHits);
+                NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 2 - Total encontrados=" + status.TotalHits);
                 while (status == null || fileListTmp.Count < status.TotalHits)
                 {
                     ADSK.File[] files = documentService.FindFilesBySearchConditions(
@@ -76,7 +81,7 @@ namespace VaultTools.vault.util
                                     {
                                         allf.Add(fcode);
                                         fileList.Add(f);
-                                        NeodentUtil.util.LOG.debug("@@@@@@@@ FindByCheckinDate - 3 - adicionado via data de checkin: code=" + fcode
+                                        NeodentUtil.util.LOG.debug("@@@@@@@@ FindAllInCheckin - 3 - adicionado: code=" + fcode
                                             + ", Name=" + f.Name + ", Size=" + f.FileSize);
                                     }
                                 }
@@ -85,7 +90,7 @@ namespace VaultTools.vault.util
                     }
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 4 - result=" + fileList.Count);
+            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 4 - result=" + fileList.Count);
             return fileList;
         }
     }

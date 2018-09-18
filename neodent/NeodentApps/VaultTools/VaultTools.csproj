@@ -91,6 +91,8 @@
     <Compile Include="vault\Download.cs" />
     <Compile Include="vault\DownloadFast.cs" />
     <Compile Include="vault\Manager.cs" />
+    <Compile Include="vault\util\DownloadFast.cs" />
+    <Compile Include="vault\util\FindAllInCheckin.cs" />
     <Compile Include="vault\util\FindByCheckedOut.cs" />
     <Compile Include="vault\util\FindByCheckinDate.cs" />
     <Compile Include="vault\util\FindByFileNameEquals.cs" />
@@ -99,6 +101,10 @@
     <Compile Include="vault\util\VaultUtil.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ACMECadTools\ACMECadTools.csproj">
+      <Project>{452ebd77-6b95-4736-a9b3-4388eaf24952}</Project>
+      <Name>ACMECadTools</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>

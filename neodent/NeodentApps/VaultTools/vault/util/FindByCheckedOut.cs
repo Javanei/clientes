@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 using ADSK = Autodesk.Connectivity.WebServices;
 
@@ -40,7 +39,8 @@ namespace VaultTools.vault.util
                 {
                     SrchOper = Condition.IS_NOT_EMPTY.Code,
                     PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = propid
+                    PropDefId = propid,
+                    SrchRule = ADSK.SearchRuleType.Must
                 };
 
                 //prop = VaultUtil.GetPropertyDefinition(serviceManager, "ClientFileName");
