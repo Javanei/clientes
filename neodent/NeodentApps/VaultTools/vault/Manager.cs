@@ -30,7 +30,7 @@ namespace VaultTools.vault
             serviceManager = util.VaultUtil.Login(this.server, this.vault, this.user, this.pass);
         }
 
-        public void Convert(string[] validExt, string storagefolder, string converterexecutable)
+        public void Convert(string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ Convert - 1");
 
@@ -57,35 +57,35 @@ namespace VaultTools.vault
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkInDate);
             NeodentUtil.util.LOG.debug("@@@@@@ Convert - 3 - desenhos encontrados=" + files.Count);
 
-            Convert(files, validExt, storagefolder, converterexecutable);
+            Convert(files, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
             NeodentUtil.util.LOG.debug("@@@@@@ Convert - 4 - FIM");
         }
 
-        public void ConvertByCheckinDate(string checkindate, string[] validExt, string storagefolder, string converterexecutable)
+        public void ConvertByCheckinDate(string checkindate, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertByCheckinDate - 1 - (checkindate=" + checkindate + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertByCheckinDate - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, storagefolder, converterexecutable);
+            Convert(files, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertByCheckinDate - 3 - FIM");
         }
 
-        public void ConvertAllInCheckin(string[] validExt, string storagefolder, string converterexecutable)
+        public void ConvertAllInCheckin(string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertAllInCheckin - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, storagefolder, converterexecutable);
+            Convert(files, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertAllInCheckin - 3 - FIM");
         }
 
-        public void ConvertByFilename(string filename, string[] validExt, string storagefolder, string converterexecutable)
+        public void ConvertByFilename(string filename, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ ConvertByFilename - 1 - (filename=" + filename + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
@@ -95,7 +95,7 @@ namespace VaultTools.vault
             {
                 ADSK.File file = files[0];
                 string desenho = GetCode(file.Name, validExt);
-                Convert(file, desenho, validExt, storagefolder, converterexecutable);
+                Convert(file, desenho, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
                 NeodentUtil.util.LOG.debug("@@@@@@ ConvertByFilename - 2 - FIM");
             }
@@ -121,7 +121,7 @@ namespace VaultTools.vault
         /*
          * Testes
          */
-        public void List(string[] validExt, string storagefolder, string converterexecutable)
+        public void List(string[] validExt, string storagefolder)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ List - 1");
 
@@ -146,35 +146,35 @@ namespace VaultTools.vault
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkInDate);
             NeodentUtil.util.LOG.debug("@@@@@@ List - 3 - desenhos encontrados=" + files.Count);
 
-            List(files, validExt, storagefolder, converterexecutable);
+            List(files, validExt, storagefolder);
             NeodentUtil.util.LOG.debug("@@@@@@ List - 4 - FIM");
         }
 
-        public void ListByCheckinDate(string checkindate, string[] validExt, string storagefolder, string converterexecutable)
+        public void ListByCheckinDate(string checkindate, string[] validExt, string storagefolder)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ ListByCheckinDate - 1 - (checkindate=" + checkindate + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ListByCheckinDate - 2 - desenhos encontrados=" + files.Count);
-            List(files, validExt, storagefolder, converterexecutable);
+            List(files, validExt, storagefolder);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ListByCheckinDate - 3 - FIM");
         }
 
-        public void ListtAllInCheckin(string[] validExt, string storagefolder, string converterexecutable)
+        public void ListtAllInCheckin(string[] validExt, string storagefolder)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ ListtAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ListtAllInCheckin - 2 - desenhos encontrados=" + files.Count);
-            List(files, validExt, storagefolder, converterexecutable);
+            List(files, validExt, storagefolder);
 
             NeodentUtil.util.LOG.debug("@@@@@@ ListtAllInCheckin - 3 - FIM");
         }
 
-        private void List(List<ADSK.File> files, string[] validExt, string storagefolder, string converterexecutable)
+        private void List(List<ADSK.File> files, string[] validExt, string storagefolder)
         {
             foreach (ADSK.File file in files)
             {
@@ -194,7 +194,7 @@ namespace VaultTools.vault
 
         // ==================
 
-        private void Convert(List<ADSK.File> files, string[] validExt, string storagefolder, string converterexecutable)
+        private void Convert(List<ADSK.File> files, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             Dictionary<string, string> config = NeodentUtil.util.DictionaryUtil.ReadPropertyFile(confFile);
             NeodentUtil.util.DictionaryUtil.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
@@ -205,7 +205,7 @@ namespace VaultTools.vault
                 string desenho = GetCode(file.Name, validExt);
                 string cfgFile = storagefolder + "\\" + desenho + ".cfg";
 
-                Convert(file, desenho, validExt, storagefolder, converterexecutable);
+                Convert(file, desenho, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
                 NeodentUtil.util.DictionaryUtil.SetProperty(config, "LastCheckInDate", file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"));
                 NeodentUtil.util.DictionaryUtil.WritePropertyFile(confFile, config);
@@ -215,10 +215,9 @@ namespace VaultTools.vault
             }
         }
 
-        private void Convert(ADSK.File file, string desenho, string[] validExt, string storagefolder, string converterexecutable)
+        private void Convert(ADSK.File file, string desenho, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate);
-            ACMECadTools.converter.Converter converter = new ACMECadTools.converter.Converter(converterexecutable);
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 2 - desenho=" + desenho);
 
             // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
@@ -244,13 +243,15 @@ namespace VaultTools.vault
             List<string> images = null;
             if (file.Name.EndsWith(".dwf"))
             {
-                images = converter.DwfToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
-                NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 5 - imagens para mergear: " + images.Count);
+                ACMECadTools.converter.Converter dwfconverter = new ACMECadTools.converter.Converter(dwfconverterexecutable);
+                images = dwfconverter.DwfToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
+                NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 5 - imagens (DWF) para mergear: " + images.Count);
             }
             else if (file.Name.EndsWith(".pdf"))
             {
-                //TODO: Implementar
-                throw new Exception("Conversao de PDF ainda nao implementado");
+                GSTools.converter.Converter pdfconverter = new GSTools.converter.Converter(pdfconverterexecutable);
+                images = pdfconverter.PDFToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
+                NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 6 - imagens (PDF) para mergear: " + images.Count);
             }
 
             // Mergeia as imagens
@@ -258,12 +259,12 @@ namespace VaultTools.vault
             {
                 string destFile = storagefolder + "\\" + desenho + ".jpg";
                 NeodentUtil.util.ImageUtil.MergeImageList(images.ToArray(), destFile);
-                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@ Convert - 6 - merge realizado: " + destFile);
+                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@ Convert - 7 - merge realizado: " + destFile);
             }
 
             // Limpa o diretorio temporario
             ClearDirectory(imgTempfolder);
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 7 - FIM");
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ Convert - 8 - FIM");
         }
 
         private string GetCode(string filename, string[] validExt)

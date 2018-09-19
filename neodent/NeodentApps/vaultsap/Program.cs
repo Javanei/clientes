@@ -14,7 +14,8 @@ namespace vaultsap
         private static string vaultserver = "neodent";
         private static string storagefolder = "c:\\temp\\storage";
         private static string tempfolder = "c:\\temp";
-        private static string converterpath;
+        private static string dwfconverterpath;
+        private static string pdfconverterpath;
         private static string checkindate;
         private static bool convertall = false;
         // Testes
@@ -62,10 +63,15 @@ namespace vaultsap
             {
                 tempfolder = value;
             }
-            value = NeodentUtil.util.DictionaryUtil.GetProperty(config, "converterpath");
+            value = NeodentUtil.util.DictionaryUtil.GetProperty(config, "dwfconverterpath");
             if (value != null)
             {
-                converterpath = value;
+                dwfconverterpath = value;
+            }
+            value = NeodentUtil.util.DictionaryUtil.GetProperty(config, "pdfconverterpath");
+            if (value != null)
+            {
+                pdfconverterpath = value;
             }
 
             ParseParams(config, args);
@@ -74,16 +80,14 @@ namespace vaultsap
 
             NeodentUtil.util.LOG.debug("Parametros:");
             NeodentUtil.util.LOG.debug("===============================");
-            NeodentUtil.util.LOG.debug("--- vaultserveraddr=" + vaultserveraddr);
-            NeodentUtil.util.LOG.debug("--- vaultserver....=" + vaultserver);
-            NeodentUtil.util.LOG.debug("--- vaultuser......=" + vaultuser);
-            NeodentUtil.util.LOG.debug("--- vaultpass......=" + vaultpass);
-            NeodentUtil.util.LOG.debug("--- tempfolder.....=" + tempfolder);
-            NeodentUtil.util.LOG.debug("--- storagefolder..=" + storagefolder);
-
-            /*
-            TESTE1();
-            */
+            NeodentUtil.util.LOG.debug("--- vaultserveraddr.=" + vaultserveraddr);
+            NeodentUtil.util.LOG.debug("--- vaultserver.....=" + vaultserver);
+            NeodentUtil.util.LOG.debug("--- vaultuser.......=" + vaultuser);
+            NeodentUtil.util.LOG.debug("--- vaultpass.......=" + vaultpass);
+            NeodentUtil.util.LOG.debug("--- tempfolder......=" + tempfolder);
+            NeodentUtil.util.LOG.debug("--- storagefolder...=" + storagefolder);
+            NeodentUtil.util.LOG.debug("--- dwfconverterpath=" + dwfconverterpath);
+            NeodentUtil.util.LOG.debug("--- pdfconverterpath=" + pdfconverterpath);
 
             if (toConvert.Count > 0)
             {
@@ -93,7 +97,7 @@ namespace vaultsap
                 {
                     foreach (string desenho in toConvert)
                     {
-                        manager.ConvertByFilename(desenho, validExt, storagefolder, converterpath);
+                        manager.ConvertByFilename(desenho, validExt, storagefolder, dwfconverterpath, pdfconverterpath);
                     }
                 }
                 finally
@@ -107,7 +111,7 @@ namespace vaultsap
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.ConvertByCheckinDate(checkindate, validExt, storagefolder, converterpath);
+                    manager.ConvertByCheckinDate(checkindate, validExt, storagefolder, dwfconverterpath, pdfconverterpath);
                 }
                 finally
                 {
@@ -120,7 +124,7 @@ namespace vaultsap
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.Convert(validExt, storagefolder, converterpath);
+                    manager.Convert(validExt, storagefolder, dwfconverterpath, pdfconverterpath);
                 }
                 finally
                 {
@@ -137,7 +141,7 @@ namespace vaultsap
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.List(validExt, storagefolder, converterpath);
+                    manager.List(validExt, storagefolder);
                 }
                 finally
                 {
@@ -150,7 +154,7 @@ namespace vaultsap
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.ListByCheckinDate(checkindate, validExt, storagefolder, converterpath);
+                    manager.ListByCheckinDate(checkindate, validExt, storagefolder);
                 }
                 finally
                 {
@@ -163,7 +167,7 @@ namespace vaultsap
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.ListtAllInCheckin(validExt, storagefolder, converterpath);
+                    manager.ListtAllInCheckin(validExt, storagefolder);
                 }
                 finally
                 {
@@ -176,7 +180,7 @@ namespace vaultsap
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.Convert(validExt, storagefolder, converterpath);
+                    manager.Convert(validExt, storagefolder, dwfconverterpath, pdfconverterpath);
                 }
                 finally
                 {
@@ -278,10 +282,15 @@ namespace vaultsap
                         storagefolder = s.Substring(s.IndexOf('=') + 1);
                         NeodentUtil.util.DictionaryUtil.SetProperty(config, "storagefolder", storagefolder);
                     }
-                    else if (arg.StartsWith("-converterpath"))
+                    else if (arg.StartsWith("-dwfconverterpath"))
                     {
-                        converterpath = s.Substring(s.IndexOf('=') + 1);
-                        NeodentUtil.util.DictionaryUtil.SetProperty(config, "converterpath", converterpath);
+                        dwfconverterpath = s.Substring(s.IndexOf('=') + 1);
+                        NeodentUtil.util.DictionaryUtil.SetProperty(config, "dwfconverterpath", dwfconverterpath);
+                    }
+                    else if (arg.StartsWith("-pdfconverterpath"))
+                    {
+                        pdfconverterpath = s.Substring(s.IndexOf('=') + 1);
+                        NeodentUtil.util.DictionaryUtil.SetProperty(config, "pdfconverterpath", pdfconverterpath);
                     }
                     else if (arg.StartsWith("-checkindate"))
                     {
