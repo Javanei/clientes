@@ -12,14 +12,49 @@ namespace GSTools.converter
             this.executablePath = executablePath;
         }
 
+        public void MergePDFs(string destPdfFile, List<string> images)
+        {
+            NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 1 - (destPdfFile=" + destPdfFile + ")");
+            if (images.Count == 1)
+            {
+                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 2 - Só um arquivo, apenas copia");
+                File.Copy(images[0], destPdfFile);
+            } else if (images.Count > 1)
+            {
+                string args = "-dNOPAUSE -dBATCH -dQUIET -sDEVICE=pdfwrite -sOUTPUTFILE=\"" + destPdfFile + "\"";
+                foreach (string img in images)
+                {
+                    args = args + " \"" + img + "\"";
+                }
+
+                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 3 - executablePath=" + executablePath);
+                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 4 - args=" + args);
+
+                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
+                {
+                    ErrorDialog = false
+                };
+                System.Diagnostics.Process process = new System.Diagnostics.Process
+                {
+                    StartInfo = startInfo
+                };
+
+                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 5 - Vai executar");
+                process.Start();
+                process.WaitForExit();
+                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 6 - Executou - exitCode=" + process.ExitCode);
+                process.Dispose();
+            }
+        }
+
         public List<string> PDFToJPG(string pdfFile, string imgTempfolder)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 1 - (pdfFile=" + pdfFile + ")");
             List<string> files = new List<string>();
 
-            //     -f 114.419.pdf
             string args = "-dNOPAUSE"
                 + " -dBATCH"
+                          + " -dQUIET"
                 + " -sDEVICE=jpeg"
                 + " -dJPEGQ=100"
                 + " -r100x100"

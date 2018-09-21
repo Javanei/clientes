@@ -88,5 +88,80 @@ namespace ACMECadTools.converter
             NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 11 - total final de arquivos: " + imgToConvert.Count);
             return imgToConvert;
         }
+
+        public List<string> DwfToPDF(string dwfFile, string imgTempfolder)
+        {
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
+            List<string> files = new List<string>();
+
+            //AcmeCADConverter.exe /r /ls /ad /res 400 /f 109 /a -2
+            string args = "/r" //run on command line mode
+                + " /ls" //Uses layout paper size if possible
+                + " /ad" //detects and fits the current page size for the converted drawing
+                + " /res 400" // 400 DPI
+                + " /f 109" // integer Raster file format -> 109 = Um PDF por layout
+                + " /a -2" //Layout Index is a interger number, -2 = todos
+                + " \"" + dwfFile + "\"";
+            ;
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 2 - executablePath=" + executablePath);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 3 - args=" + args);
+
+            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
+            {
+                ErrorDialog = false
+            };
+            System.Diagnostics.Process process = new System.Diagnostics.Process
+            {
+                StartInfo = startInfo
+            };
+
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 4 - Vai executar");
+            process.Start();
+            process.WaitForExit();
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 5 - exitCode=" + process.ExitCode);
+
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 6 - Executou");
+            process.Dispose();
+
+            string basedir = Directory.GetParent(dwfFile).FullName;
+            string[] images = Directory.GetFiles(basedir);
+            foreach (string f in images)
+            {
+                if (f.EndsWith(".pdf"))
+                {
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToPDF - 7 - encontrado arquivo=" + f);
+                    files.Add(f);
+                }
+            }
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 8 - arquivos: " + files.Count);
+            files.Sort();
+
+            // Pega a lista de imagens que precisam ser consideradas.
+            Dictionary<string, string> fileProps = new Dictionary<string, string>();
+            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps);
+            List<string> imgToConvert = new List<string>();
+            foreach (var key in fileProps.Keys)
+            {
+                int line = int.Parse(key.ToString());
+                if (line > 0)
+                {
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToPDF - 9 - considerando arquivo: " + line + " -> " + images[line - 1]);
+                    imgToConvert.Add(images[line - 1]);
+                }
+            }
+
+            // Exclui as imagens nao necessarias
+            foreach (string file in files)
+            {
+                if (!imgToConvert.Contains(file))
+                {
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToPDF - 10 - excluindo arquivo: " + file);
+                    File.Delete(file);
+                }
+            }
+
+            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 11 - total final de arquivos: " + imgToConvert.Count);
+            return imgToConvert;
+        }
     }
 }
