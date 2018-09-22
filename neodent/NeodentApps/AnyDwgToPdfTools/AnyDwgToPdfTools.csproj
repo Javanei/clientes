@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{12D658D4-5B77-4629-BF0B-4EE2E33C37CD}</ProjectGuid>
+    <ProjectGuid>{A0329944-8ECF-4C28-AE99-3C04F5DBEC3C}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GSTools</RootNamespace>
-    <AssemblyName>GSTools</AssemblyName>
+    <RootNamespace>AnyDwgToPdfTools</RootNamespace>
+    <AssemblyName>AnyDwgToPdfTools</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -46,6 +46,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DWFTools\DWFTools.csproj">
+      <Project>{989e4b71-6689-4f92-a9b5-e50a91ed5b8f}</Project>
+      <Name>DWFTools</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>

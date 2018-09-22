@@ -14,7 +14,7 @@ namespace ACMECadTools.converter
 
         public List<string> DwfToJPG(string dwfFile, string imgTempfolder)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 1 - (dwfFile=" + dwfFile + ")");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 1 - (dwfFile=" + dwfFile + ") - Existe? " + File.Exists(dwfFile));
             List<string> files = new List<string>();
 
             string args = "/r" //run on command line mode
@@ -27,9 +27,9 @@ namespace ACMECadTools.converter
                 + " /a -2" //Layout Index is a interger number, -2 = todos
                            //+ " /d \"D:\tmp\\cad\\convertido\"" Não funciona!
                 + " \"" + dwfFile + "\"";
-            ;
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 2 - executablePath=" + executablePath);
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 3 - args=" + args);
+            
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 2 - executablePath=" + executablePath);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 3 - args=" + args);
 
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
             {
@@ -40,12 +40,12 @@ namespace ACMECadTools.converter
                 StartInfo = startInfo
             };
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 4 - Vai executar");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 4 - Vai executar");
             process.Start();
             process.WaitForExit();
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 5 - exitCode=" + process.ExitCode);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 5 - exitCode=" + process.ExitCode);
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 6 - Executou");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 6 - Executou");
             process.Dispose();
 
             string basedir = Directory.GetParent(dwfFile).FullName;
@@ -54,11 +54,11 @@ namespace ACMECadTools.converter
             {
                 if (f.EndsWith(".jpg"))
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToJPG - 7 - encontrado arquivo=" + f);
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToJPG - 7 - encontrado arquivo=" + f);
                     files.Add(f);
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 8 - arquivos: " + files.Count);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 8 - arquivos: " + files.Count);
             files.Sort();
 
             // Pega a lista de imagens que precisam ser consideradas.
@@ -70,7 +70,7 @@ namespace ACMECadTools.converter
                 int line = int.Parse(key.ToString());
                 if (line > 0)
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToJPG - 9 - considerando arquivo: " + line + " -> " + images[line - 1]);
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToJPG - 9 - considerando arquivo: " + line + " -> " + images[line - 1]);
                     imgToConvert.Add(images[line - 1]);
                 }
             }
@@ -80,18 +80,18 @@ namespace ACMECadTools.converter
             {
                 if (!imgToConvert.Contains(file))
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToJPG - 10 - excluindo arquivo: " + file);
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToJPG - 10 - excluindo arquivo: " + file);
                     File.Delete(file);
                 }
             }
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 11 - total final de arquivos: " + imgToConvert.Count);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToJPG - 11 - total final de arquivos: " + imgToConvert.Count);
             return imgToConvert;
         }
 
         public List<string> DwfToPDF(string dwfFile, string imgTempfolder)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
             List<string> files = new List<string>();
 
             //AcmeCADConverter.exe /r /ls /ad /res 400 /f 109 /a -2
@@ -100,11 +100,12 @@ namespace ACMECadTools.converter
                 + " /ad" //detects and fits the current page size for the converted drawing
                 + " /res 400" // 400 DPI
                 + " /f 109" // integer Raster file format -> 109 = Um PDF por layout
+                //+ " /w 5950 /h 8410" -> A4?
                 + " /a -2" //Layout Index is a interger number, -2 = todos
                 + " \"" + dwfFile + "\"";
-            ;
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 2 - executablePath=" + executablePath);
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 3 - args=" + args);
+
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 2 - executablePath=" + executablePath);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 3 - args=" + args);
 
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
             {
@@ -115,12 +116,12 @@ namespace ACMECadTools.converter
                 StartInfo = startInfo
             };
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 4 - Vai executar");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 4 - Vai executar");
             process.Start();
             process.WaitForExit();
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 5 - exitCode=" + process.ExitCode);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 5 - exitCode=" + process.ExitCode);
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 6 - Executou");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 6 - Executou");
             process.Dispose();
 
             string basedir = Directory.GetParent(dwfFile).FullName;
@@ -129,11 +130,11 @@ namespace ACMECadTools.converter
             {
                 if (f.EndsWith(".pdf"))
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToPDF - 7 - encontrado arquivo=" + f);
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToPDF - 7 - encontrado arquivo=" + f);
                     files.Add(f);
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 8 - arquivos: " + files.Count);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 8 - arquivos: " + files.Count);
             files.Sort();
 
             // Pega a lista de imagens que precisam ser consideradas.
@@ -145,7 +146,7 @@ namespace ACMECadTools.converter
                 int line = int.Parse(key.ToString());
                 if (line > 0)
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToPDF - 9 - considerando arquivo: " + line + " -> " + images[line - 1]);
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToPDF - 9 - considerando arquivo: " + line + " -> " + images[line - 1]);
                     imgToConvert.Add(images[line - 1]);
                 }
             }
@@ -155,12 +156,12 @@ namespace ACMECadTools.converter
             {
                 if (!imgToConvert.Contains(file))
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ DwfToPDF - 10 - excluindo arquivo: " + file);
+                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToPDF - 10 - excluindo arquivo: " + file);
                     File.Delete(file);
                 }
             }
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToPDF - 11 - total final de arquivos: " + imgToConvert.Count);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 11 - total final de arquivos: " + imgToConvert.Count);
             return imgToConvert;
         }
     }

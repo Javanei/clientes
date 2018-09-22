@@ -18,11 +18,13 @@ namespace vaultsap
         private static string pdfconverterpath;
         private static string checkindate;
         private static bool convertall = false;
+        private static bool convert = false;
         // Testes
         private static bool listpropertydef = false;
         private static bool listbycheckindate = false;
         private static bool listall = false;
         private static bool list = false;
+        private static bool listcheckedout = false;
 
         private static readonly string[] validExt = new string[] { ".idw.dwf", ".dwg.dwf", ".pdf" };
         private static readonly string confFile = "vaultsap.conf";
@@ -89,6 +91,7 @@ namespace vaultsap
             NeodentUtil.util.LOG.debug("--- dwfconverterpath=" + dwfconverterpath);
             NeodentUtil.util.LOG.debug("--- pdfconverterpath=" + pdfconverterpath);
 
+
             if (toConvert.Count > 0)
             {
                 VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories,
@@ -105,19 +108,6 @@ namespace vaultsap
                     manager.Close();
                 }
             }
-            else if (checkindate != null)
-            {
-                VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories,
-                    vaultserver, vaultuser, vaultpass, tempfolder);
-                try
-                {
-                    manager.ConvertByCheckinDate(checkindate, validExt, storagefolder, dwfconverterpath, pdfconverterpath);
-                }
-                finally
-                {
-                    manager.Close();
-                }
-            }
             else if (convertall)
             {
                 VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories,
@@ -125,6 +115,25 @@ namespace vaultsap
                 try
                 {
                     manager.Convert(validExt, storagefolder, dwfconverterpath, pdfconverterpath);
+                }
+                finally
+                {
+                    manager.Close();
+                }
+            }
+            else if (convert)
+            {
+                VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories,
+                    vaultserver, vaultuser, vaultpass, tempfolder);
+                try
+                {
+                    if (checkindate == null || checkindate == "")
+                    {
+                        manager.Convert(validExt, storagefolder, dwfconverterpath, pdfconverterpath);
+                    } else
+                    {
+                        manager.ConvertByCheckinDate(checkindate, validExt, storagefolder, dwfconverterpath, pdfconverterpath);
+                    }
                 }
                 finally
                 {
@@ -174,58 +183,58 @@ namespace vaultsap
                     manager.Close();
                 }
             }
-            else
+            else if (listcheckedout)
             {
                 VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories,
                     vaultserver, vaultuser, vaultpass, tempfolder);
                 try
                 {
-                    manager.Convert(validExt, storagefolder, dwfconverterpath, pdfconverterpath);
+                    manager.ListAllCheckedOut(validExt, storagefolder);
                 }
                 finally
                 {
                     manager.Close();
                 }
             }
-
-            /*
-            if (toConvert.Count > 0)
+            else if (checkindate != null)
             {
-                ACMECadTools.converter.Converter converter = new ACMECadTools.converter.Converter(converterpath);
-                foreach (string desenho in toConvert)
+                VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories,
+                    vaultserver, vaultuser, vaultpass, tempfolder);
+                try
                 {
-                    // Usa um diretorio por imagem por causa dos problemas em deletar os arquivos
-                    string imgTempfolder = tempfolder + "\\" + desenho;
-
-                    // Por garantia, limpa o diretorio temporario
-                    ClearDirectory(imgTempfolder);
-
-                    // Cria o diretório temporario da imagem
-                    if (!Directory.Exists(imgTempfolder))
-                    {
-                        Directory.CreateDirectory(imgTempfolder);
-                    }
-
-                    // Copia a imagem do Vault para a pasta temporario (equivale ao download)
-                    string srcFile = "D:\\tmp\\cad\\vaultsap\\imagens\\" + desenho + ".idw.dwf";
-                    string file = imgTempfolder + "\\" + desenho + ".idw.dwf";
-                    File.Copy(srcFile, file);
-
-                    // Enfim, converte as imagens
-                    List<string> images = converter.DwfToJPG(file, imgTempfolder);
-
-                    // Mergeia as imagens
-                    if (images.Count > 0)
-                    {
-                        string destFile = storagefolder + "\\" + desenho + ".jpg";
-                        NeodentUtil.util.ImageUtil.MergeImageList(images.ToArray(), destFile);
-                    }
-
-                    // Limpa o diretorio temporario
-                    ClearDirectory(imgTempfolder);
+                    manager.ConvertByCheckinDate(checkindate, validExt, storagefolder, dwfconverterpath, pdfconverterpath);
+                }
+                finally
+                {
+                    manager.Close();
                 }
             }
-            */
+            else
+            {
+                Console.WriteLine("===================================");
+                Console.WriteLine("Sintaxe:");
+                Console.WriteLine("  vaultsap.exe [config] [comando] [desenho1] [desenho2] [desenho...]");
+                Console.WriteLine("    Opcoes validas para [config]:");
+                Console.WriteLine("      -vaultuser=<username>: Usuario de acesso ao Vault");
+                Console.WriteLine("      -vaultpass=<password>: Senha de acesso ao Vault");
+                Console.WriteLine("      -vaultserveraddr=<endereco>: Endereço do servidor vault. Default: br03s059.straumann.com");
+                Console.WriteLine("      -vaultserver=<nome>: Nome do servidor no Vault. Default: neodent");
+                Console.WriteLine("      -storagefolder=<caminho>: Caminho da pasta onde os desenhos convertidos serão salvos");
+                Console.WriteLine("      -tempfolder=<caminho>: Caminho da pasta temporária que será usada durante a conversão");
+                Console.WriteLine("      -dwfconverterpath=<caminho>: Caminho do executável que converte os arquivos DWF para PDF/JPG");
+                Console.WriteLine("      -pdfconverterpath=<caminho>: Caminho do executável que manipula PDF (Ghostscript)");
+                Console.WriteLine("      -checkindate=<yyyy/MM/dd HH:mm:ss>: Uma data de checkin inicial para operações que a utilizarem");
+                Console.WriteLine("    Opcoes validas para [comando]:");
+                Console.WriteLine("      -convertall: Converte TODOS os desenhos que estão em checkin");
+                Console.WriteLine("      -convert: Converte os desenhos a partir da data de checkin informada por -checkindate. Se não informada busca a data no arquivo vaultsap.conf. Se também não encontrar, converte TODOS os desenhos");
+                Console.WriteLine("    Opcoes de teste validas para [comando]:");
+                Console.WriteLine("      -listbycheckindate: Lista todos os desenhos em checkin a partir da data informada por -checkindate");
+                Console.WriteLine("      -listall: Lista todos os desenhos em checkin");
+                Console.WriteLine("      -list: Lista os desenhos em checkin usando a data de checkin salva no arquivo vaultsap.conf. Se não tiver uma data, lista todos");
+                Console.WriteLine("      -listcheckedout: Lista todos os desenhos em checkout");
+                Console.WriteLine("    [desenho1] [desenho2] [desenho...]: Converte os desenhos informados");
+                Console.WriteLine("===================================");
+            }
         }
 
         private static void ClearDirectory(string dir)
@@ -300,6 +309,10 @@ namespace vaultsap
                     {
                         convertall = true;
                     }
+                    else if (arg.Equals("-convert"))
+                    {
+                        convert = true;
+                    }
                     else if (arg.Equals("-listpropertydef"))
                     {
                         listpropertydef = true;
@@ -311,6 +324,10 @@ namespace vaultsap
                     else if (arg.Equals("-listall"))
                     {
                         listall = true;
+                    }
+                    else if (arg.Equals("-listcheckedout"))
+                    {
+                        listcheckedout = true;
                     }
                     else if (arg.Equals("-list"))
                     {

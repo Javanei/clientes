@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ACMECadTools", "ACMECadTool
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GSTools", "GSTools\GSTools.csproj", "{12D658D4-5B77-4629-BF0B-4EE2E33C37CD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnyDwgToPdfTools", "AnyDwgToPdfTools\AnyDwgToPdfTools.csproj", "{A0329944-8ECF-4C28-AE99-3C04F5DBEC3C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TotalCadTools", "TotalCadTools\TotalCadTools.csproj", "{B8D264FC-4B0A-4D89-B27D-07ED3E0406AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +49,14 @@ Global
 		{12D658D4-5B77-4629-BF0B-4EE2E33C37CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12D658D4-5B77-4629-BF0B-4EE2E33C37CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12D658D4-5B77-4629-BF0B-4EE2E33C37CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0329944-8ECF-4C28-AE99-3C04F5DBEC3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0329944-8ECF-4C28-AE99-3C04F5DBEC3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0329944-8ECF-4C28-AE99-3C04F5DBEC3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0329944-8ECF-4C28-AE99-3C04F5DBEC3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8D264FC-4B0A-4D89-B27D-07ED3E0406AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8D264FC-4B0A-4D89-B27D-07ED3E0406AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8D264FC-4B0A-4D89-B27D-07ED3E0406AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8D264FC-4B0A-4D89-B27D-07ED3E0406AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
