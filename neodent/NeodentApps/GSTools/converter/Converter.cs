@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Collections.Generic;
+using NeodentUtil.util;
 
 /*
 Paper Keywords and paper size in points
@@ -34,6 +35,43 @@ namespace GSTools.converter
         public Converter(string executablePath)
         {
             this.executablePath = executablePath;
+        }
+
+        public List<string> SplitPDF(string sourcePdfFile)
+        {
+            LOG.debug("(@@@@@@@@ SplitPDF - 1 - (sourcePdfFile=" + sourcePdfFile + ")=" + File.Exists(sourcePdfFile));
+            string basedir = Directory.GetParent(sourcePdfFile).FullName;
+            LOG.debug("@@@@@@@@ SplitPDF - 2 - basedir=" + basedir);
+            string args = "-dNOPAUSE -dBATCH -dQUIET -sDEVICE=pdfwrite -o " + basedir + "\\out-%03d.pdf -f \"" + sourcePdfFile + "\"";
+            LOG.debug("@@@@@@@@ SplitPDF - 3 - args=" + args);
+
+            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
+            {
+                ErrorDialog = false
+            };
+            System.Diagnostics.Process process = new System.Diagnostics.Process
+            {
+                StartInfo = startInfo
+            };
+
+            LOG.debug("@@@@@@@@ SplitPDF - 4 - Vai executar");
+            process.Start();
+            process.WaitForExit();
+            LOG.debug("@@@@@@@@ SplitPDF - 5 - Executou - exitCode=" + process.ExitCode);
+            process.Dispose();
+
+            List<string> result = new List<string>();
+            string[] files = Directory.GetFiles(basedir);
+            foreach(string f in files)
+            {
+                if (f.ToLower().EndsWith(".pdf") && f.ToLower().Contains("out-"))
+                {
+                    LOG.debug("@@@@@@@@@@ SplitPDF - 6 - pdf=" + f);
+                    result.Add(f);
+                }
+            }
+
+            return result;
         }
 
         public bool MergePDFs(string destPdfFile, List<string> images)
