@@ -13,6 +13,7 @@ namespace vaultsap
 
         private static IDWFConverter dwfconverter;
 
+        // Configuração
         private static string vaultuser = "integracao";
         private static string vaultpass = "brasil2010";
         private static string vaultserveraddr = "br03s059.straumann.com";
@@ -22,21 +23,24 @@ namespace vaultsap
         private static string dwfconverterpath;
         private static string pdfconverterpath;
         private static string checkindate;
+        private static bool ignorecheckout = false;
+
+        // Comandos
         private static bool convertall = false;
         private static bool convert = false;
-        private static bool ignorecheckout = false;
-        private static bool help = false;
-        // Testes
         private static bool listpropertydef = false;
         private static bool listbycheckindate = false;
         private static bool listall = false;
         private static bool list = false;
         private static bool listcheckedout = false;
+        private static bool showinfo = false;
+        private static bool help = false;
+
+        // Lista de desenhos a serem processandos
+        private static List<string> toConvert = new List<string>();
 
         private static readonly string[] validExt = new string[] { ".idw.dwf", ".dwg.dwf", ".pdf" };
         private static readonly string confFile = "vaultsap.conf";
-
-        private static List<string> toConvert = new List<string>();
 
         [STAThread]
         static void Main(string[] args)
@@ -154,14 +158,16 @@ namespace vaultsap
                 Console.WriteLine("      -dwfconverterpath=<caminho>: Caminho do executável que converte os arquivos DWF para PDF/JPG");
                 Console.WriteLine("      -pdfconverterpath=<caminho>: Caminho do executável que manipula PDF (Ghostscript)");
                 Console.WriteLine("      -checkindate=<yyyy/MM/dd HH:mm:ss>: Uma data de checkin inicial para operações que a utilizarem");
+                Console.WriteLine("      -ignorecheckout: Na conversão de desenhos específicos, converte mesmo que em checkout");
                 Console.WriteLine("    Opcoes validas para [comando]:");
                 Console.WriteLine("      -convertall: Converte TODOS os desenhos que estão em checkin");
                 Console.WriteLine("      -convert: Converte os desenhos a partir da data de checkin informada por -checkindate. Se não informada busca a data no arquivo vaultsap.conf. Se também não encontrar, converte TODOS os desenhos");
-                Console.WriteLine("    Opcoes de teste validas para [comando]:");
                 Console.WriteLine("      -listbycheckindate: Lista todos os desenhos em checkin a partir da data informada por -checkindate");
                 Console.WriteLine("      -listall: Lista todos os desenhos em checkin");
                 Console.WriteLine("      -list: Lista os desenhos em checkin usando a data de checkin salva no arquivo vaultsap.conf. Se não tiver uma data, lista todos");
                 Console.WriteLine("      -listcheckedout: Lista todos os desenhos em checkout");
+                Console.WriteLine("      -showinfo: Mostra informações detalhadas referentes aos desenhos especificados");
+                Console.WriteLine("      -help: Mostra essa tela de ajuda");
                 Console.WriteLine("    [desenho1] [desenho2] [desenho...]: Converte os desenhos informados");
                 Console.WriteLine("===================================");
             }
@@ -177,7 +183,14 @@ namespace vaultsap
                         {
                             foreach (string desenho in toConvert)
                             {
-                                manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, ignorecheckout);
+                                if (showinfo)
+                                {
+                                    manager.ShowInfoByName(desenho);
+                                }
+                                else
+                                {
+                                    manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, ignorecheckout);
+                                }
                             }
                         }
                         else if (convertall)
@@ -329,6 +342,11 @@ namespace vaultsap
                     else if (arg.Equals("-listcheckedout"))
                     {
                         listcheckedout = true;
+                        help = help || false;
+                    }
+                    else if (arg.Equals("-showinfo"))
+                    {
+                        showinfo = true;
                         help = help || false;
                     }
                     else if (arg.Equals("-list"))

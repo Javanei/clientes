@@ -119,9 +119,31 @@ namespace VaultTools.vault
             }
         }
 
-        /*
-         * Testes
-         */
+        public void ShowInfoByName(string name)
+        {
+            ADSK.DocumentService documentService = serviceManager.DocumentService;
+            List<ADSK.File> files = util.FindByFileNameMatches.Find(serviceManager, documentService, baseRepositories, name);
+            foreach (ADSK.File file in files)
+            {
+                Console.WriteLine("Arquivo: " + file.Name);
+                Console.WriteLine(" - Id............=" + file.Id);
+                Console.WriteLine(" - Hidden........=" + file.Hidden);
+                Console.WriteLine(" - CheckedOut....=" + file.CheckedOut);
+                Console.WriteLine(" - CkInDate......=" + file.CkInDate);
+                Console.WriteLine(" - CkOutUserId...=" + file.CkOutUserId);
+                Console.WriteLine(" - CreateDate....=" + file.CreateDate);
+                Console.WriteLine(" - CreateUserId..=" + file.CreateUserId);
+                Console.WriteLine(" - CreateUserName=" + file.CreateUserName);
+                Console.WriteLine(" - ModDate.......=" + file.ModDate);
+                Console.WriteLine(" - FileRev.......=" + file.FileRev);
+                Console.WriteLine(" - FileSize......=" + file.FileSize);
+                Console.WriteLine(" - FileStatus....=" + file.FileStatus);
+                Console.WriteLine(" - VerName.......=" + file.VerName);
+                Console.WriteLine(" - VerNum........=" + file.VerNum);
+                Console.WriteLine("==============================================================");
+            }
+        }
+
         public void List(string[] validExt, string storagefolder)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.List - 1");
@@ -130,20 +152,6 @@ namespace VaultTools.vault
             Dictionary<string, string> config = NeodentUtil.util.DictionaryUtil.ReadPropertyFile(confFile);
             NeodentUtil.util.DictionaryUtil.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
             string checkInDate = NeodentUtil.util.DictionaryUtil.GetProperty(config, "LastCheckInDate");
-            /*
-            if (checkInDate == null || checkInDate == "")
-            {
-                checkInDate = new DateTime(
-                    1980, //agora.Year
-                    1, //agora.Month
-                    1, //agora.Day
-                    0, //agora.Hour
-                    0, //agora.Minute
-                    0, //agora.Second
-                    0 //agora.Millisecond
-                    ).ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss");
-            }
-            */
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.List - 2 - checkInDate=" + checkInDate);
 
             List<ADSK.File> files;
@@ -157,7 +165,7 @@ namespace VaultTools.vault
             }
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.List - 3 - desenhos encontrados=" + files.Count);
 
-            List(files, validExt);
+            List(files);
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.List - 4 - FIM");
         }
 
@@ -168,7 +176,7 @@ namespace VaultTools.vault
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ListByCheckinDate - 2 - desenhos encontrados=" + files.Count);
-            List(files, validExt);
+            List(files);
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ListByCheckinDate - 3 - FIM - " + files.Count);
         }
 
@@ -179,7 +187,7 @@ namespace VaultTools.vault
             List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ListtAllInCheckin - 2 - desenhos encontrados=" + files.Count);
-            List(files, validExt);
+            List(files);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ListtAllInCheckin - 3 - FIM - " + files.Count);
         }
@@ -191,12 +199,12 @@ namespace VaultTools.vault
             List<ADSK.File> files = util.FindByCheckedOut.Find(serviceManager, baseRepositories, validExt);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ListAllCheckedOut - 2 - desenhos encontrados=" + files.Count);
-            List(files, validExt);
+            List(files);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ListAllCheckedOut - 3 - FIM - " + files.Count);
         }
 
-        private void List(List<ADSK.File> files, string[] validExt)
+        private void List(List<ADSK.File> files)
         {
             foreach (ADSK.File file in files)
             {
