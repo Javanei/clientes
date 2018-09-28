@@ -42,7 +42,7 @@ namespace GSTools.converter
             LOG.debug("(@@@@@@@@ SplitPDF - 1 - (sourcePdfFile=" + sourcePdfFile + ")=" + File.Exists(sourcePdfFile));
             string basedir = Directory.GetParent(sourcePdfFile).FullName;
             LOG.debug("@@@@@@@@ SplitPDF - 2 - basedir=" + basedir);
-            string args = "-dNOPAUSE -dBATCH -dQUIET -sDEVICE=pdfwrite -o " + basedir + "\\out-%03d.pdf -f \"" + sourcePdfFile + "\"";
+            string args = "-dNOPAUSE -dBATCH -dQUIET -sDEVICE=pdfwrite -o \"" + basedir + "\\out-%03d.pdf\" -f \"" + sourcePdfFile + "\"";
             LOG.debug("@@@@@@@@ SplitPDF - 3 - args=" + args);
 
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
@@ -62,7 +62,7 @@ namespace GSTools.converter
 
             List<string> result = new List<string>();
             string[] files = Directory.GetFiles(basedir);
-            foreach(string f in files)
+            foreach (string f in files)
             {
                 if (f.ToLower().EndsWith(".pdf") && f.ToLower().Contains("out-"))
                 {
