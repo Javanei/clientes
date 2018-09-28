@@ -63,7 +63,7 @@ namespace DWFTools.util
                                     {
                                         foreach (string s in sheetPrefixes)
                                         {
-                                            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + sheetName + ", prefix=" + s);
+                                            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + reader.Value + ", prefix=" + s);
                                             if (reader.Value.ToLower().IndexOf(s) >= 0)
                                             {
                                                 sheetName = reader.Value;
