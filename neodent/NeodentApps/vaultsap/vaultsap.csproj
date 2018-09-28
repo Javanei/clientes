@@ -127,6 +127,10 @@
       <Project>{452ebd77-6b95-4736-a9b3-4388eaf24952}</Project>
       <Name>ACMECadTools</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DWFCore\DWFCore.csproj">
+      <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
+      <Name>DWFCore</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>

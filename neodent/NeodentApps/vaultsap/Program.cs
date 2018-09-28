@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using NeodentUtil.util;
+using DWFCore.dwf;
 
 namespace vaultsap
 {
@@ -9,6 +10,8 @@ namespace vaultsap
     {
         private static readonly string[] baseRepositories = new string[] { "$/Neodent/Produção", "$/Neodent/Preset" };
         private static readonly string[] sheetPrefixes = new string[] { "op_", "ps_" };
+
+        private static IDWFConverter dwfconverter;
 
         private static string vaultuser = "integracao";
         private static string vaultpass = "brasil2010";
@@ -21,6 +24,7 @@ namespace vaultsap
         private static string checkindate;
         private static bool convertall = false;
         private static bool convert = false;
+        private static bool ignorecheckout = false;
         private static bool help = false;
         // Testes
         private static bool listpropertydef = false;
@@ -80,6 +84,8 @@ namespace vaultsap
             }
 
             ParseParams(config, args);
+
+            dwfconverter = new ACMECadTools.converter.Converter(dwfconverterpath);
 
             DictionaryUtil.WritePropertyFile(confFile, config);
 
@@ -163,7 +169,7 @@ namespace vaultsap
             {
                 try
                 {
-                    VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver,
+                    VaultTools.vault.Manager manager = new VaultTools.vault.Manager(dwfconverter, vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver,
                         vaultuser, vaultpass, tempfolder);
                     try
                     {
@@ -171,7 +177,7 @@ namespace vaultsap
                         {
                             foreach (string desenho in toConvert)
                             {
-                                manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath);
+                                manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, ignorecheckout);
                             }
                         }
                         else if (convertall)
@@ -334,6 +340,10 @@ namespace vaultsap
                     {
                         help = true;
                     }
+                    else if (arg.Equals("-ignorecheckout"))
+                    {
+                        ignorecheckout = true;
+                    }
                     else if (!arg.Contains("="))
                     {
                         toConvert.Add(s.Trim());
@@ -346,7 +356,7 @@ namespace vaultsap
         /* --------------------- */
         private static void ListaPropertyDef()
         {
-            VaultTools.vault.Manager manager = new VaultTools.vault.Manager(vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver,
+            VaultTools.vault.Manager manager = new VaultTools.vault.Manager(dwfconverter, vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver,
                 vaultuser, vaultpass, tempfolder);
             try
             {

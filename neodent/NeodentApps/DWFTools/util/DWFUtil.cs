@@ -63,11 +63,12 @@ namespace DWFTools.util
                                     {
                                         foreach (string s in sheetPrefixes)
                                         {
+                                            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + sheetName + ", prefix=" + s);
                                             if (reader.Value.ToLower().IndexOf(s) >= 0)
                                             {
                                                 sheetName = reader.Value;
-                                                sheetPrefix = s.Substring(0, 2);
-                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@ ParseXml - 2 - encontrou sheet: " + sheetName);
+                                                sheetPrefix = s.Substring(0, 2).ToUpper();
+                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 3 - encontrou sheet: " + sheetName);
                                             }
                                         }
                                     }
@@ -83,7 +84,8 @@ namespace DWFTools.util
                 }
             }
             reader.Close();
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 3 - Fez o parser do arquivo: " + fileName);
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 4 - Fez o parser do arquivo: " + fileName);
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 5 - resultado: " + d.ToString());
             return d;
         }
     }

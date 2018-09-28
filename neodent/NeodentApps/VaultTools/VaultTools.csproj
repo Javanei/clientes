@@ -95,6 +95,10 @@
       <Project>{452ebd77-6b95-4736-a9b3-4388eaf24952}</Project>
       <Name>ACMECadTools</Name>
     </ProjectReference>
+    <ProjectReference Include="..\DWFCore\DWFCore.csproj">
+      <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
+      <Name>DWFCore</Name>
+    </ProjectReference>
     <ProjectReference Include="..\GSTools\GSTools.csproj">
       <Project>{12d658d4-5b77-4629-bf0b-4ee2e33c37cd}</Project>
       <Name>GSTools</Name>

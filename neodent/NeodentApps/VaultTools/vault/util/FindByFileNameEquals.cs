@@ -12,7 +12,8 @@ namespace VaultTools.vault.util
         public static List<ADSK.File> FindByNameAndExtEquals(ADSKTools.WebServiceManager serviceManager, ADSK.DocumentService documentService,
             string[] baseRepositories, string filename, string[] validExt, bool ignoreCheckout)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 1 - (filename=" + filename + ")");
+            NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 1 - (filename=" + filename
+                + ", ignoreCheckout=" + ignoreCheckout + ")");
 
             List<ADSK.File> fl = ignoreCheckout
                 ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename)
@@ -25,8 +26,8 @@ namespace VaultTools.vault.util
                     foreach (string ext in validExt)
                     {
                         fl = ignoreCheckout
-                            ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename)
-                            : FindByNameEqualsCheckinOnly(serviceManager, documentService, baseRepositories, filename);
+                            ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename + ext)
+                            : FindByNameEqualsCheckinOnly(serviceManager, documentService, baseRepositories, filename + ext);
                         NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 3 - encontrados com extensao '" + ext + "'=" + fl.Count);
                         if (fl.Count > 0)
                         {

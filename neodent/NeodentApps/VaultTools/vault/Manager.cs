@@ -2,6 +2,8 @@
 using System;
 using System.IO;
 
+using DWFCore.dwf;
+
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 using ADSK = Autodesk.Connectivity.WebServices;
 
@@ -9,6 +11,7 @@ namespace VaultTools.vault
 {
     public class Manager
     {
+        private IDWFConverter dwfconverter;
         private string[] baseRepositories;
         private string[] sheetPrefix;
         private string server;
@@ -20,8 +23,9 @@ namespace VaultTools.vault
 
         private ADSKTools.WebServiceManager serviceManager = null;
 
-        public Manager(string server, string[] baseRepositories, string[] sheetPrefix, string vault, string user, string pass, string tempfolder)
+        public Manager(IDWFConverter dwfconverter, string server, string[] baseRepositories, string[] sheetPrefix, string vault, string user, string pass, string tempfolder)
         {
+            this.dwfconverter = dwfconverter;
             this.server = server;
             this.baseRepositories = baseRepositories;
             this.sheetPrefix = sheetPrefix;
@@ -81,12 +85,13 @@ namespace VaultTools.vault
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 3 - FIM");
         }
 
-        public void ConvertByFilename(string filename, string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        public void ConvertByFilename(string filename, string[] validExt, string[] sheetPrefixes, string storagefolder,
+            string dwfconverterexecutable, string pdfconverterexecutable, bool ignorecheckout)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByFilename - 1 - (filename=" + filename + ")");
+            NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByFilename - 1 - (filename=" + filename + ", ignorecheckout=" + ignorecheckout + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByFileNameEquals.FindByNameAndExtEquals(serviceManager, documentService,
-                baseRepositories, filename, validExt, false);
+                baseRepositories, filename, validExt, ignorecheckout);
             if (files.Count == 1)
             {
                 ADSK.File file = files[0];
@@ -249,7 +254,7 @@ namespace VaultTools.vault
         private bool Convert(ADSK.File file, string desenho, string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             bool result = false;
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate 
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate
                 + ", CheckedOut=" + file.CheckedOut + ", CkOutUserId=" + file.CkOutUserId);
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 2 - desenho=" + desenho);
 
@@ -278,7 +283,7 @@ namespace VaultTools.vault
             List<string> images = null;
             if (file.Name.EndsWith(".dwf"))
             {
-                ACMECadTools.converter.Converter dwfconverter = new ACMECadTools.converter.Converter(dwfconverterexecutable);
+                //ACMECadTools.converter.Converter dwfconverter = new ACMECadTools.converter.Converter(dwfconverterexecutable);
                 //images = dwfconverter.DwfToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
                 // Converte para PDF
                 images = dwfconverter.DwfToPDF(imgTempfolder + "\\" + file.Name, imgTempfolder, sheetPrefixes);
