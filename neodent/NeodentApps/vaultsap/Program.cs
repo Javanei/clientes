@@ -212,23 +212,23 @@ namespace vaultsap
                         }
                         else if (listpropertydef)
                         {
-                            ListaPropertyDef();
+                            manager.ListaPropertyDef();
                         }
                         else if (list)
                         {
-                            manager.List(validExt, storagefolder);
+                            manager.List(validExt);
                         }
                         else if (listbycheckindate)
                         {
-                            manager.ListByCheckinDate(checkindate, validExt, storagefolder);
+                            manager.ListByCheckinDate(checkindate, validExt);
                         }
                         else if (listcheckedout)
                         {
-                            manager.ListAllCheckedOut(validExt, storagefolder);
+                            manager.ListAllCheckedOut(validExt);
                         }
                         else if (listall)
                         {
-                            manager.ListtAllInCheckin(validExt, storagefolder);
+                            manager.ListtAllInCheckin(validExt);
                         }
                         else if (checkindate != null)
                         {
@@ -243,23 +243,6 @@ namespace vaultsap
                 catch (Exception eManager)
                 {
                     LOG.error("Não conseguiu conectar o Vault: " + eManager.Message);
-                }
-            }
-        }
-
-        private static void ClearDirectory(string dir)
-        {
-            LOG.debug("@@@@@@@@@@ ClearDirectory - 1 - (" + dir + ")");
-            if (Directory.Exists(dir))
-            {
-                try
-                {
-                    Directory.Delete(dir, true);
-                    LOG.debug("@@@@@@@@@@ ClearDirectory - 2 - (" + dir + ") - OK");
-                }
-                catch (IOException ex)
-                {
-                    LOG.debug("@@@@@@@@@@ ClearDirectory - 3 - (" + dir + ") - ERRO: " + ex.Message);
                 }
             }
         }
@@ -374,23 +357,6 @@ namespace vaultsap
                         help = help || false;
                     }
                 }
-            }
-        }
-
-        /* --------------------- */
-        private static void ListaPropertyDef()
-        {
-            VaultTools.vault.Manager manager = new VaultTools.vault.Manager(dwfconverter, vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver,
-                vaultuser, vaultpass, tempfolder);
-            try
-            {
-                LOG.debug("===============================");
-                manager.TmpListPropertyDefinition();
-                LOG.debug("===============================");
-            }
-            finally
-            {
-                manager.Close();
             }
         }
     }
