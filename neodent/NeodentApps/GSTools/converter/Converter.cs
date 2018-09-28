@@ -82,10 +82,10 @@ namespace GSTools.converter
                 File.Delete(destPdfFile);
             }
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 1 - (destPdfFile=" + destPdfFile + ")");
+            LOG.debug("@@@@@@@@ MergePDFs - 1 - (destPdfFile=" + destPdfFile + ")");
             if (images.Count == 1)
             {
-                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 2 - Só um arquivo, apenas copia");
+                LOG.debug("@@@@@@@@ MergePDFs - 2 - Só um arquivo, apenas copia");
                 File.Copy(images[0], destPdfFile);
                 return true;
             }
@@ -97,8 +97,8 @@ namespace GSTools.converter
                     args = args + " \"" + img + "\"";
                 }
 
-                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 3 - executablePath=" + executablePath);
-                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 4 - args=" + args);
+                LOG.debug("@@@@@@@@ MergePDFs - 3 - executablePath=" + executablePath);
+                LOG.debug("@@@@@@@@ MergePDFs - 4 - args=" + args);
 
                 System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
                 {
@@ -109,10 +109,10 @@ namespace GSTools.converter
                     StartInfo = startInfo
                 };
 
-                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 5 - Vai executar");
+                LOG.debug("@@@@@@@@ MergePDFs - 5 - Vai executar");
                 process.Start();
                 process.WaitForExit();
-                NeodentUtil.util.LOG.debug("@@@@@@@@ MergePDFs - 6 - Executou - exitCode=" + process.ExitCode);
+                LOG.debug("@@@@@@@@ MergePDFs - 6 - Executou - exitCode=" + process.ExitCode);
                 process.Dispose();
                 return true;
             }
@@ -121,7 +121,7 @@ namespace GSTools.converter
 
         public List<string> PDFToJPG(string pdfFile, string imgTempfolder)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 1 - (pdfFile=" + pdfFile + ")");
+            LOG.debug("@@@@@@@@ PDFToJPG - 1 - (pdfFile=" + pdfFile + ")");
             List<string> files = new List<string>();
 
             //     -f 114.419.pdf
@@ -133,8 +133,8 @@ namespace GSTools.converter
                 + " -dQUIET"
                 + " -f \"" + pdfFile + "\"";
             ;
-            NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 2 - executablePath=" + executablePath);
-            NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 3 - args=" + args);
+            LOG.debug("@@@@@@@@ PDFToJPG - 2 - executablePath=" + executablePath);
+            LOG.debug("@@@@@@@@ PDFToJPG - 3 - args=" + args);
 
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
             {
@@ -145,12 +145,12 @@ namespace GSTools.converter
                 StartInfo = startInfo
             };
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 4 - Vai executar");
+            LOG.debug("@@@@@@@@ PDFToJPG - 4 - Vai executar");
             process.Start();
             process.WaitForExit();
-            NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 5 - exitCode=" + process.ExitCode);
+            LOG.debug("@@@@@@@@ PDFToJPG - 5 - exitCode=" + process.ExitCode);
 
-            NeodentUtil.util.LOG.debug("@@@@@@@@ PDFToJPG - 6 - Executou");
+            LOG.debug("@@@@@@@@ PDFToJPG - 6 - Executou");
             process.Dispose();
 
             string basedir = Directory.GetParent(pdfFile).FullName;
@@ -159,11 +159,11 @@ namespace GSTools.converter
             {
                 if (f.EndsWith(".jpg"))
                 {
-                    NeodentUtil.util.LOG.debug("@@@@@@@@@@ PDFToJPG - 7 - encontrado arquivo=" + f);
+                    LOG.debug("@@@@@@@@@@ PDFToJPG - 7 - encontrado arquivo=" + f);
                     files.Add(f);
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@@@ DwfToJPG - 8 - arquivos: " + files.Count);
+            LOG.debug("@@@@@@@@ DwfToJPG - 8 - arquivos: " + files.Count);
             files.Sort();
 
             return files;
