@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using System.Collections.Generic;
+using DWFCore.dwf;
 
 namespace TotalCadTools.converter
 {
-    public class Converter
+    public class Converter : IDWFConverter
     {
         private string executablePath;
 
@@ -27,7 +28,7 @@ namespace TotalCadTools.converter
                 + " -ps A4"
                 + " -pc F"
                 + " -pvl sp";
-            
+
             NeodentUtil.util.LOG.debug("@@@@@@@@ TotalCadTools.DwfToPDF - 2 - executablePath=" + executablePath);
             NeodentUtil.util.LOG.debug("@@@@@@@@ TotalCadTools.DwfToPDF - 3 - args=" + args);
 

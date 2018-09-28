@@ -11,7 +11,7 @@ namespace vaultsap
         private static readonly string[] baseRepositories = new string[] { "$/Neodent/Produção", "$/Neodent/Preset" };
         private static readonly string[] sheetPrefixes = new string[] { "op_", "ps_" };
 
-        private static IDWFConverter dwfconverter;
+        private static IDWFConverter dwfconverter = null;
 
         // Configuração
         private static string vaultuser = "integracao";
@@ -90,7 +90,21 @@ namespace vaultsap
 
             ParseParams(config, args);
 
-            dwfconverter = new ACMECadTools.converter.Converter(dwfconverterpath);
+            if (dwfconverter == null)
+            {
+                if (dwfconverterpath.ToLower().Contains("dp.exe"))
+                {
+                    dwfconverter = new AnyDwgToPdfTools.converter.Converter(dwfconverterpath);
+                }
+                else if (dwfconverterpath.ToLower().Contains("cadconverterx64.exe"))
+                {
+                    dwfconverter = new TotalCadTools.converter.Converter(dwfconverterpath);
+                }
+                else
+                {
+                    dwfconverter = new ACMECadTools.converter.Converter(dwfconverterpath);
+                }
+            }
 
             DictionaryUtil.WritePropertyFile(confFile, config);
 
@@ -197,17 +211,17 @@ namespace vaultsap
                         }
                         else if (convertall)
                         {
-                            manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
+                            manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
                         }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
+                                manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
                             }
                             else
                             {
-                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
+                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
                             }
                         }
                         else if (listpropertydef)
@@ -216,11 +230,11 @@ namespace vaultsap
                         }
                         else if (list)
                         {
-                            manager.List(validExt);
+                            manager.List(validExt, ignorecheckout);
                         }
                         else if (listbycheckindate)
                         {
-                            manager.ListByCheckinDate(checkindate, validExt);
+                            manager.ListByCheckinDate(checkindate, validExt, ignorecheckout);
                         }
                         else if (listcheckedout)
                         {
@@ -228,11 +242,11 @@ namespace vaultsap
                         }
                         else if (listall)
                         {
-                            manager.ListtAllInCheckin(validExt);
+                            manager.ListtAllInCheckin(validExt, ignorecheckout);
                         }
                         else if (checkindate != null)
                         {
-                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
+                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
                         }
                     }
                     finally

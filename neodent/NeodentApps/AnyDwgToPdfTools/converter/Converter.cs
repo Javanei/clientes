@@ -1,9 +1,10 @@
 ﻿using System.IO;
 using System.Collections.Generic;
+using DWFCore.dwf;
 
 namespace AnyDwgToPdfTools.converter
 {
-    public class Converter
+    public class Converter : IDWFConverter
     {
         private string executablePath;
 

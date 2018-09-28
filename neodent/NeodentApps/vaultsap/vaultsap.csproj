@@ -127,6 +127,10 @@
       <Project>{452ebd77-6b95-4736-a9b3-4388eaf24952}</Project>
       <Name>ACMECadTools</Name>
     </ProjectReference>
+    <ProjectReference Include="..\AnyDwgToPdfTools\AnyDwgToPdfTools.csproj">
+      <Project>{a0329944-8ecf-4c28-ae99-3c04f5dbec3c}</Project>
+      <Name>AnyDwgToPdfTools</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DWFCore\DWFCore.csproj">
       <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
       <Name>DWFCore</Name>
@@ -134,6 +138,10 @@
     <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TotalCadTools\TotalCadTools.csproj">
+      <Project>{b8d264fc-4b0a-4d89-b27d-07ed3e0406aa}</Project>
+      <Name>TotalCadTools</Name>
     </ProjectReference>
     <ProjectReference Include="..\VaultTools\VaultTools.csproj">
       <Project>{28866a51-3c15-4ccc-8b5b-38150eb8120a}</Project>

@@ -11,7 +11,7 @@ namespace VaultTools.vault.util
     class FindByCheckinDate
     {
         public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager, string[] baseRepositories,
-            string[] validExt, String checkinDate)
+            string[] validExt, String checkinDate, bool ignorecheckout)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 1 - (checkinDate=" + checkinDate + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
@@ -43,26 +43,11 @@ namespace VaultTools.vault.util
                     SortAsc = true,
                     PropDefId = propid
                 };
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + 2];
+                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + (ignorecheckout ? 2 : 1)];
                 //Condição para filtrar apenas os que não estiverem em checkout
-                conditions[0] = new ADSK.SrchCond
-                {
-                    SrchOper = Condition.IS_EMPTY.Code,
-                    PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = (int)propCheckoutUserName.Id,
-                    SrchRule = ADSK.SearchRuleType.Must
-                };
-                conditions[1] = new ADSK.SrchCond
-                {
-                    SrchOper = Condition.GREATER_THAN.Code,
-                    SrchTxt = checkinDate,
-                    PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = propid,
-                    SrchRule = ADSK.SearchRuleType.Must
-                };
                 for (int i = 0; i < validExt.Length; i++)
                 {
-                    conditions[i + 2] = new ADSK.SrchCond
+                    conditions[i] = new ADSK.SrchCond
                     {
                         SrchOper = Condition.CONTAINS.Code,
                         SrchTxt = validExt[i],
@@ -71,20 +56,24 @@ namespace VaultTools.vault.util
                         SrchRule = ADSK.SearchRuleType.May
                     };
                 }
-
-                /*
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[1];
-                conditions[0] = new ADSK.SrchCond
+                if (ignorecheckout)
                 {
-                    SrchOper = Condition.GREATER_THAN_OR_EQUAL.Code,
+                    conditions[conditions.Length - 2] = new ADSK.SrchCond
+                    {
+                        SrchOper = Condition.IS_EMPTY.Code,
+                        PropTyp = ADSK.PropertySearchType.SingleProperty,
+                        PropDefId = (int)propCheckoutUserName.Id,
+                        SrchRule = ADSK.SearchRuleType.Must
+                    };
+                }
+                conditions[conditions.Length - 1] = new ADSK.SrchCond
+                {
+                    SrchOper = Condition.GREATER_THAN.Code,
                     SrchTxt = checkinDate,
                     PropTyp = ADSK.PropertySearchType.SingleProperty,
                     PropDefId = propid,
                     SrchRule = ADSK.SearchRuleType.Must
                 };
-                */
-
-                //prop = VaultUtil.GetPropertyDefinition(serviceManager, "ClientFileName");
 
                 while (status == null || fileListTmp.Count < status.TotalHits)
                 {

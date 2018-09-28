@@ -11,7 +11,7 @@ namespace VaultTools.vault.util
     class FindAllInCheckin
     {
         public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager, string[] baseRepositories, 
-            string[] validExt)
+            string[] validExt, bool ignorecheckout)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
@@ -40,24 +40,27 @@ namespace VaultTools.vault.util
                 };
                 NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 7");
 
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + 1];
+                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + (ignorecheckout ? 0 : 1)];
                 //Condição para filtrar apenas os que não estiverem em checkout
-                conditions[0] = new ADSK.SrchCond
-                {
-                    SrchOper = Condition.IS_EMPTY.Code,
-                    PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = (int)propCheckoutUserName.Id,
-                    SrchRule = ADSK.SearchRuleType.Must
-                };
                 for (int i = 0; i < validExt.Length; i++)
                 {
-                    conditions[i + 1] = new ADSK.SrchCond
+                    conditions[i] = new ADSK.SrchCond
                     {
                         SrchOper = Condition.CONTAINS.Code,
                         SrchTxt = validExt[i],
                         PropTyp = ADSK.PropertySearchType.SingleProperty,
                         PropDefId = (int)propClientFileName.Id,
                         SrchRule = ADSK.SearchRuleType.May
+                    };
+                }
+                if (ignorecheckout)
+                {
+                    conditions[conditions.Length - 1] = new ADSK.SrchCond
+                    {
+                        SrchOper = Condition.IS_EMPTY.Code,
+                        PropTyp = ADSK.PropertySearchType.SingleProperty,
+                        PropDefId = (int)propCheckoutUserName.Id,
+                        SrchRule = ADSK.SearchRuleType.Must
                     };
                 }
                 NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 8 - conditions=" + conditions);

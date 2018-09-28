@@ -22,7 +22,7 @@ namespace ACMECadTools.converter
             string args = "/r" //run on command line mode
                 + " /ls" //Uses layout paper size if possible
                 + " /ad" //detects and fits the current page size for the converted drawing
-                + " /res 400" // 400 DPI
+                + " /res 600" // 600 DPI
                 + " /f 109" // integer Raster file format -> 109 = Um PDF por layout
                             //+ " /w 5950 /h 8410" -> A4?
                 + " /a -2" //Layout Index is a interger number, -2 = todos
