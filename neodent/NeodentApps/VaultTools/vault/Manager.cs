@@ -10,6 +10,7 @@ namespace VaultTools.vault
     public class Manager
     {
         private string[] baseRepositories;
+        private string[] sheetPrefix;
         private string server;
         private string vault;
         private string user;
@@ -19,10 +20,11 @@ namespace VaultTools.vault
 
         private ADSKTools.WebServiceManager serviceManager = null;
 
-        public Manager(string server, string[] baseRepositories, string vault, string user, string pass, string tempfolder)
+        public Manager(string server, string[] baseRepositories, string[] sheetPrefix, string vault, string user, string pass, string tempfolder)
         {
             this.server = server;
             this.baseRepositories = baseRepositories;
+            this.sheetPrefix = sheetPrefix;
             this.vault = vault;
             this.user = user;
             this.pass = pass;
@@ -30,7 +32,7 @@ namespace VaultTools.vault
             serviceManager = util.VaultUtil.Login(this.server, this.vault, this.user, this.pass);
         }
 
-        public void Convert(string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        public void Convert(string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.Convert - 1");
 
@@ -51,35 +53,35 @@ namespace VaultTools.vault
             }
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.Convert - 3 - desenhos encontrados=" + files.Count);
 
-            Convert(files, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
+            Convert(files, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.Convert - 4 - FIM");
         }
 
-        public void ConvertByCheckinDate(string checkindate, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        public void ConvertByCheckinDate(string checkindate, string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 1 - (checkindate=" + checkindate + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
+            Convert(files, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 3 - FIM");
         }
 
-        public void ConvertAllInCheckin(string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        public void ConvertAllInCheckin(string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
+            Convert(files, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 3 - FIM");
         }
 
-        public void ConvertByFilename(string filename, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        public void ConvertByFilename(string filename, string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByFilename - 1 - (filename=" + filename + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
@@ -89,7 +91,7 @@ namespace VaultTools.vault
             {
                 ADSK.File file = files[0];
                 string desenho = GetCode(file.Name, validExt);
-                Convert(file, desenho, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
+                Convert(file, desenho, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
 
                 NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByFilename - 2 - FIM");
             }
@@ -209,7 +211,7 @@ namespace VaultTools.vault
 
         // ==================
 
-        private void Convert(List<ADSK.File> files, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        private void Convert(List<ADSK.File> files, string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             Dictionary<string, string> config = NeodentUtil.util.DictionaryUtil.ReadPropertyFile(confFile);
             NeodentUtil.util.DictionaryUtil.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
@@ -223,7 +225,7 @@ namespace VaultTools.vault
 
                 contador++;
                 NeodentUtil.util.LOG.debug("===================== Vai converter arquivo [" + contador + "] de [" + files.Count + "] - " + file.Name);
-                bool converteu = Convert(file, desenho, validExt, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
+                bool converteu = Convert(file, desenho, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable);
                 NeodentUtil.util.LOG.debug("===================== Converteu " + file.Name + "? " + converteu);
 
                 /*
@@ -244,10 +246,11 @@ namespace VaultTools.vault
             }
         }
 
-        private bool Convert(ADSK.File file, string desenho, string[] validExt, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
+        private bool Convert(ADSK.File file, string desenho, string[] validExt, string[] sheetPrefixes, string storagefolder, string dwfconverterexecutable, string pdfconverterexecutable)
         {
             bool result = false;
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate);
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate 
+                + ", CheckedOut=" + file.CheckedOut + ", CkOutUserId=" + file.CkOutUserId);
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 2 - desenho=" + desenho);
 
             // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
@@ -278,7 +281,7 @@ namespace VaultTools.vault
                 ACMECadTools.converter.Converter dwfconverter = new ACMECadTools.converter.Converter(dwfconverterexecutable);
                 //images = dwfconverter.DwfToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
                 // Converte para PDF
-                images = dwfconverter.DwfToPDF(imgTempfolder + "\\" + file.Name, imgTempfolder);
+                images = dwfconverter.DwfToPDF(imgTempfolder + "\\" + file.Name, imgTempfolder, sheetPrefixes);
                 NeodentUtil.util.LOG.debug("@@@@@@@@@@ Manager.Convert - 5 - imagens (DWF) para mergear: " + images.Count);
             }
             else if (file.Name.EndsWith(".pdf"))

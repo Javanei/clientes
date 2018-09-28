@@ -12,7 +12,7 @@ namespace AnyDwgToPdfTools.converter
             this.executablePath = executablePath;
         }
 
-        public List<string> DwfToPDF(string dwfFile, string imgTempfolder)
+        public List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@ AnyDwgToPdfTools.DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
             List<string> files = new List<string>();
@@ -66,7 +66,7 @@ namespace AnyDwgToPdfTools.converter
 
             // Pega a lista de imagens que precisam ser consideradas.
             Dictionary<string, string> fileProps = new Dictionary<string, string>();
-            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps);
+            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps, sheetPrefixes);
             List<string> imgToConvert = new List<string>();
             foreach (var key in fileProps.Keys)
             {
