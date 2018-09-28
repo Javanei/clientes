@@ -86,7 +86,7 @@ namespace VaultTools.vault
             NeodentUtil.util.LOG.debug("@@@@@@ Manager.ConvertByFilename - 1 - (filename=" + filename + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByFileNameEquals.FindByNameAndExtEquals(serviceManager, documentService,
-                baseRepositories, filename, validExt);
+                baseRepositories, filename, validExt, false);
             if (files.Count == 1)
             {
                 ADSK.File file = files[0];
