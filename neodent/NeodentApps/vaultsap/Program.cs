@@ -39,6 +39,7 @@ namespace vaultsap
 
         // Lista de desenhos a serem processandos
         private static List<string> toConvert = new List<string>();
+        private static List<string> filesToConvert = new List<string>();
 
         private static readonly string[] validExt = new string[] { ".idw.dwf", ".dwg.dwf", ".pdf" };
         private static readonly string confFile = "vaultsap.conf";
@@ -98,7 +99,7 @@ namespace vaultsap
                 }
                 else if (dwfconverterpath.ToLower().Contains("cadconverterx64.exe"))
                 {
-                    dwfconverter = new TotalCadTools.converter.Converter(dwfconverterpath);
+                    dwfconverter = new TotalCadTools.converter.Converter(dwfconverterpath, pdfconverterpath);
                 }
                 else
                 {
@@ -173,6 +174,8 @@ namespace vaultsap
                 Console.WriteLine("      -dwfconverterpath=<caminho>: Caminho do executável que converte os arquivos DWF para PDF/JPG");
                 Console.WriteLine("      -pdfconverterpath=<caminho>: Caminho do executável que manipula PDF (Ghostscript)");
                 Console.WriteLine("      -checkindate=<yyyy/MM/dd HH:mm:ss>: Uma data de checkin inicial para operações que a utilizarem");
+                Console.WriteLine("      -sourcefile=<filepath>: Converte o arquivo especificado que já está em alguma pasta no disco");
+                Console.WriteLine("      -sourcedir=<dir>: Converte os arquivos que estão na pasta especificada (e subpastas)");
                 Console.WriteLine("      -ignorecheckout: Na conversão de desenhos específicos, converte mesmo que em checkout");
                 Console.WriteLine("      -preservetemp: Não apaga os arquivos temporários usados durante a conversão");
                 Console.WriteLine("    Opcoes validas para [comando]:");
@@ -191,11 +194,21 @@ namespace vaultsap
             {
                 try
                 {
-                    VaultTools.vault.Manager manager = new VaultTools.vault.Manager(dwfconverter, vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver,
-                        vaultuser, vaultpass, tempfolder);
+                    VaultTools.vault.Manager manager = filesToConvert.Count == 0
+                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver, vaultuser, vaultpass, tempfolder)
+                        : new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, baseRepositories, sheetPrefixes, tempfolder);
                     try
                     {
-                        if (toConvert.Count > 0)
+                        if (filesToConvert.Count > 0)
+                        {
+                            foreach (string f in filesToConvert)
+                            {
+                                string dir = Directory.GetParent(f).FullName;
+                                string file = Path.GetFileName(f);
+                                manager.ConvertAlreadyDownloadedFile(dir, file, validExt, sheetPrefixes, storagefolder, preservetemp);
+                            }
+                        }
+                        else if (toConvert.Count > 0)
                         {
                             foreach (string desenho in toConvert)
                             {
@@ -205,23 +218,23 @@ namespace vaultsap
                                 }
                                 else
                                 {
-                                    manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, ignorecheckout, preservetemp);
+                                    manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
                                 }
                             }
                         }
                         else if (convertall)
                         {
-                            manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
+                            manager.Convert(validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                         }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
+                                manager.Convert(validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                             }
                             else
                             {
-                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
+                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                             }
                         }
                         else if (listpropertydef)
@@ -246,7 +259,7 @@ namespace vaultsap
                         }
                         else if (checkindate != null)
                         {
-                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp, ignorecheckout);
+                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                         }
                     }
                     finally
@@ -307,6 +320,32 @@ namespace vaultsap
                     {
                         pdfconverterpath = s.Substring(s.IndexOf('=') + 1);
                         DictionaryUtil.SetProperty(config, "pdfconverterpath", pdfconverterpath);
+                    }
+                    else if (arg.StartsWith("-sourcefile"))
+                    {
+                        filesToConvert.Add(s.Substring(s.IndexOf('=') + 1));
+                    }
+                    else if (arg.StartsWith("-sourcedir"))
+                    {
+                        List<string> dirs = new List<string>();
+                        dirs.Add(s.Substring(s.IndexOf('=') + 1));
+                        while (dirs.Count > 0)
+                        {
+                            string dir = dirs[0];
+                            foreach (string f in Directory.GetFiles(dir))
+                            {
+                                //TODO: if (f.EndsWith(".dwf") || f.EndsWith(".pdf")) {
+                                if (f.EndsWith(".dwf"))
+                                {
+                                    filesToConvert.Add(f);
+                                }
+                            }
+                            dirs.Remove(dir);
+                            foreach (string f in Directory.GetDirectories(dir))
+                            {
+                                dirs.Add(f);
+                            }
+                        }
                     }
                     else if (arg.StartsWith("-checkindate"))
                     {

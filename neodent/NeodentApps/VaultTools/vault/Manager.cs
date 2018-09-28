@@ -13,6 +13,7 @@ namespace VaultTools.vault
     public class Manager
     {
         private IDWFConverter dwfconverter;
+        private string pdfconverterexecutable;
         private string[] baseRepositories;
         private string[] sheetPrefix;
         private string server;
@@ -24,9 +25,20 @@ namespace VaultTools.vault
 
         private ADSKTools.WebServiceManager serviceManager = null;
 
-        public Manager(IDWFConverter dwfconverter, string server, string[] baseRepositories, string[] sheetPrefix, string vault, string user, string pass, string tempfolder)
+        public Manager(IDWFConverter dwfconverter, string pdfconverterexecutable, string[] baseRepositories, 
+            string[] sheetPrefix, string tempfolder)
         {
             this.dwfconverter = dwfconverter;
+            this.pdfconverterexecutable = pdfconverterexecutable;
+            this.baseRepositories = baseRepositories;
+            this.sheetPrefix = sheetPrefix;
+            this.tempfolder = tempfolder;
+        }
+
+        public Manager(IDWFConverter dwfconverter, string pdfconverterexecutable, string server, string[] baseRepositories, string[] sheetPrefix, string vault, string user, string pass, string tempfolder)
+        {
+            this.dwfconverter = dwfconverter;
+            this.pdfconverterexecutable = pdfconverterexecutable;
             this.server = server;
             this.baseRepositories = baseRepositories;
             this.sheetPrefix = sheetPrefix;
@@ -38,7 +50,7 @@ namespace VaultTools.vault
         }
 
         public void Convert(string[] validExt, string[] sheetPrefixes, string storagefolder,
-            string dwfconverterexecutable, string pdfconverterexecutable, bool preservetemp, bool ignorecheckout)
+            bool preservetemp, bool ignorecheckout)
         {
             LOG.info("Manager.Convert(preservetemp=" + preservetemp + ")");
 
@@ -59,38 +71,38 @@ namespace VaultTools.vault
             }
             LOG.debug("@@@@@@ Manager.Convert - 3 - desenhos encontrados=" + files.Count);
 
-            Convert(files, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable, preservetemp);
+            Convert(files, validExt, sheetPrefixes, storagefolder, preservetemp);
             LOG.debug("@@@@@@ Manager.Convert - 4 - FIM");
         }
 
         public void ConvertByCheckinDate(string checkindate, string[] validExt, string[] sheetPrefixes, string storagefolder,
-            string dwfconverterexecutable, string pdfconverterexecutable, bool preservetemp, bool ignorecheckout)
+            bool preservetemp, bool ignorecheckout)
         {
             LOG.info("Manager.ConvertByCheckinDate(checkindate=" + checkindate + ", preservetemp=" + preservetemp + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate, ignorecheckout);
 
             LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable, preservetemp);
+            Convert(files, validExt, sheetPrefixes, storagefolder, preservetemp);
 
             LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 3 - FIM");
         }
 
         public void ConvertAllInCheckin(string[] validExt, string[] sheetPrefixes, string storagefolder,
-            string dwfconverterexecutable, string pdfconverterexecutable, bool preservetemp)
+            bool preservetemp)
         {
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt, false);
 
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable, preservetemp);
+            Convert(files, validExt, sheetPrefixes, storagefolder, preservetemp);
 
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 3 - FIM");
         }
 
         public void ConvertByFilename(string filename, string[] validExt, string[] sheetPrefixes, string storagefolder,
-            string dwfconverterexecutable, string pdfconverterexecutable, bool ignorecheckout, bool preservetemp)
+            bool ignorecheckout, bool preservetemp)
         {
             LOG.info("Manager.ConvertByFilename(filename=" + filename + ", ignorecheckout=" + ignorecheckout + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
@@ -100,7 +112,7 @@ namespace VaultTools.vault
             {
                 ADSK.File file = files[0];
                 string desenho = GetCode(file.Name, validExt);
-                Convert(file, desenho, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable, preservetemp);
+                Convert(file, desenho, validExt, sheetPrefixes, storagefolder, preservetemp);
 
                 LOG.debug("@@@@@@ Manager.ConvertByFilename - 2 - FIM");
             }
@@ -238,10 +250,51 @@ namespace VaultTools.vault
             Console.WriteLine("***************************");
         }
 
+        public bool ConvertAlreadyDownloadedFile(string filedir, string filename, string[] validExt, string[] sheetPrefixes, 
+            string storagefolder, bool preservetemp)
+        {
+            LOG.info("Manager.ConvertAlreadyDownloadedFile(filedir=" + filedir + ", filename=" + filename + ")");
+
+            bool result = false;
+
+            Dictionary<string, string> fileInfo = new Dictionary<string, string>();
+            string desenho = GetCode(filename, validExt);
+            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 2 - desenho=" + desenho);
+
+            // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
+            string imgTempfolder = tempfolder + "\\" + desenho.Trim();
+            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 3 - imgTempfolder=" + imgTempfolder);
+
+            // Por garantia, limpa o diretorio temporario
+            ClearDirectory(imgTempfolder);
+
+            // Cria o diretório temporario da imagem
+            if (!Directory.Exists(imgTempfolder))
+            {
+                Directory.CreateDirectory(imgTempfolder);
+            }
+
+            string filepath = imgTempfolder + "\\" + filename;
+            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 4 - filepath=" + filepath);
+
+            // Copia o desenho para a pasta temporaria
+            File.Copy(filedir + "\\" + filename, filepath);
+
+            result = ConvertFile(filepath, desenho, sheetPrefixes, storagefolder);
+
+            // Limpa o diretorio temporario
+            if (!preservetemp)
+            {
+                ClearDirectory(imgTempfolder);
+            }
+            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 5 - result=" + result);
+            return result;
+        }
+
         // ==================
 
         private void Convert(List<ADSK.File> files, string[] validExt, string[] sheetPrefixes, string storagefolder,
-            string dwfconverterexecutable, string pdfconverterexecutable, bool preservetemp)
+            bool preservetemp)
         {
             Dictionary<string, string> config = DictionaryUtil.ReadPropertyFile(confFile);
             DictionaryUtil.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
@@ -255,7 +308,7 @@ namespace VaultTools.vault
 
                 contador++;
                 LOG.debug("===================== Vai converter arquivo [" + contador + "] de [" + files.Count + "] - " + file.Name);
-                bool converteu = Convert(file, desenho, validExt, sheetPrefixes, storagefolder, dwfconverterexecutable, pdfconverterexecutable, preservetemp);
+                bool converteu = Convert(file, desenho, validExt, sheetPrefixes, storagefolder, preservetemp);
                 LOG.debug("===================== Converteu " + file.Name + "? " + converteu);
 
                 DictionaryUtil.SetProperty(config, "LastCheckInDate", file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"));
@@ -263,8 +316,46 @@ namespace VaultTools.vault
             }
         }
 
+        private bool ConvertFile(string file, string desenho, string[] sheetPrefixes, string storagefolder)
+        {
+            bool result = false;
+            LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 1 - file=" + file);
+            string imgTempfolder = Directory.GetParent(file).FullName;
+            LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 2 - imgTempfolder=" + imgTempfolder);
+
+            // Enfim, converte as imagens
+            List<string> images = null;
+            if (file.EndsWith(".dwf"))
+            {
+                images = dwfconverter.DwfToPDF(file, imgTempfolder, sheetPrefixes);
+                LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 3 - imagens (DWF) para mergear: " + images.Count);
+            }
+            else if (file.EndsWith(".pdf"))
+            {
+                // Apenas copia para a pasta final
+                images = new List<string>
+                {
+                    file
+                };
+                LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 4 - imagens (PDF) para mergear: " + images.Count);
+            }
+
+            // Mergeia as imagens
+            if (images.Count > 0)
+            {
+                string destFile = storagefolder + "\\" + desenho + ".pdf";
+                GSTools.converter.Converter merger = new GSTools.converter.Converter(pdfconverterexecutable);
+                merger.MergePDFs(destFile, images);
+                result = true;
+                File.SetAttributes(destFile, FileAttributes.Normal);
+            }
+
+            LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 5 - result=" + result);
+            return result;
+        }
+
         private bool Convert(ADSK.File file, string desenho, string[] validExt, string[] sheetPrefixes, string storagefolder,
-            string dwfconverterexecutable, string pdfconverterexecutable, bool preservetemp)
+            bool preservetemp)
         {
             bool result = false;
             LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate
@@ -292,44 +383,7 @@ namespace VaultTools.vault
             LOG.debug("@@@@@@@@@@ Manager.Convert - 4 - Download efetuado - " + downFile + " - " + File.Exists(downFile));
             File.SetAttributes(downFile, FileAttributes.Normal);
 
-            // Enfim, converte as imagens
-            List<string> images = null;
-            if (file.Name.EndsWith(".dwf"))
-            {
-                //ACMECadTools.converter.Converter dwfconverter = new ACMECadTools.converter.Converter(dwfconverterexecutable);
-                //images = dwfconverter.DwfToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
-                // Converte para PDF
-                images = dwfconverter.DwfToPDF(imgTempfolder + "\\" + file.Name, imgTempfolder, sheetPrefixes);
-                LOG.debug("@@@@@@@@@@ Manager.Convert - 5 - imagens (DWF) para mergear: " + images.Count);
-            }
-            else if (file.Name.EndsWith(".pdf"))
-            {
-                // Apenas copia para a pasta final
-                images = new List<string>
-                {
-                    imgTempfolder + "\\" + file.Name
-                };
-                /*
-                GSTools.converter.Converter pdfconverter = new GSTools.converter.Converter(pdfconverterexecutable);
-                images = pdfconverter.PDFToJPG(imgTempfolder + "\\" + file.Name, imgTempfolder);
-                */
-                LOG.debug("@@@@@@@@@@ Manager.Convert - 6 - imagens (PDF) para mergear: " + images.Count);
-            }
-
-            // Mergeia as imagens
-            if (images.Count > 0)
-            {
-                /*
-                string destFile = storagefolder + "\\" + desenho + ".jpg";
-                NeodentUtil.util.ImageUtil.MergeImageList(images.ToArray(), destFile);
-                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@ Manager.Convert - 7 - merge realizado: " + destFile);
-                */
-                string destFile = storagefolder + "\\" + desenho + ".pdf";
-                GSTools.converter.Converter merger = new GSTools.converter.Converter(pdfconverterexecutable);
-                merger.MergePDFs(destFile, images);
-                result = true;
-                File.SetAttributes(destFile, FileAttributes.Normal);
-            }
+            result = ConvertFile(downFile, desenho, sheetPrefixes, storagefolder);
 
             // Limpa o diretorio temporario
             if (!preservetemp)
