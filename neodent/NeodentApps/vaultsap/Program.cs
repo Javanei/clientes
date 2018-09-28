@@ -24,6 +24,7 @@ namespace vaultsap
         private static string pdfconverterpath;
         private static string checkindate;
         private static bool ignorecheckout = false;
+        private static bool preservetemp = false;
 
         // Comandos
         private static bool convertall = false;
@@ -159,6 +160,7 @@ namespace vaultsap
                 Console.WriteLine("      -pdfconverterpath=<caminho>: Caminho do executável que manipula PDF (Ghostscript)");
                 Console.WriteLine("      -checkindate=<yyyy/MM/dd HH:mm:ss>: Uma data de checkin inicial para operações que a utilizarem");
                 Console.WriteLine("      -ignorecheckout: Na conversão de desenhos específicos, converte mesmo que em checkout");
+                Console.WriteLine("      -preservetemp: Não apaga os arquivos temporários usados durante a conversão");
                 Console.WriteLine("    Opcoes validas para [comando]:");
                 Console.WriteLine("      -convertall: Converte TODOS os desenhos que estão em checkin");
                 Console.WriteLine("      -convert: Converte os desenhos a partir da data de checkin informada por -checkindate. Se não informada busca a data no arquivo vaultsap.conf. Se também não encontrar, converte TODOS os desenhos");
@@ -189,23 +191,23 @@ namespace vaultsap
                                 }
                                 else
                                 {
-                                    manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, ignorecheckout);
+                                    manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, ignorecheckout, preservetemp);
                                 }
                             }
                         }
                         else if (convertall)
                         {
-                            manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath);
+                            manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
                         }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath);
+                                manager.Convert(validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
                             }
                             else
                             {
-                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath);
+                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
                             }
                         }
                         else if (listpropertydef)
@@ -230,7 +232,7 @@ namespace vaultsap
                         }
                         else if (checkindate != null)
                         {
-                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath);
+                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, dwfconverterpath, pdfconverterpath, preservetemp);
                         }
                     }
                     finally
@@ -361,6 +363,10 @@ namespace vaultsap
                     else if (arg.Equals("-ignorecheckout"))
                     {
                         ignorecheckout = true;
+                    }
+                    else if (arg.Equals("-preservetemp"))
+                    {
+                        preservetemp = true;
                     }
                     else if (!arg.Contains("="))
                     {
