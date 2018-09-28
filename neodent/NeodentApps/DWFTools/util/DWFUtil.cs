@@ -85,7 +85,6 @@ namespace DWFTools.util
             }
             reader.Close();
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 4 - Fez o parser do arquivo: " + fileName);
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 5 - resultado: " + d.ToString());
             return d;
         }
     }

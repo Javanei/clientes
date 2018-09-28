@@ -55,10 +55,20 @@ namespace ACMECadTools.converter
                 if (f.EndsWith(".pdf"))
                 {
                     NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToPDF - 7 - encontrado arquivo=" + f);
-                    files.Add(f);
+                    // Tenta filtrar os arquivos incorretas pelo tamanho
+                    FileInfo fi = new FileInfo(f);
+                    if (fi.Length > 10000)
+                    {
+                        NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToPDF - 8 - Ignorando arquivo=" + f);
+                    }
+                    else
+                    {
+                        NeodentUtil.util.LOG.debug("@@@@@@@@@@ ACMECadTools.DwfToPDF - 9 - Considerando arquivo=" + f);
+                        files.Add(f);
+                    }
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 8 - arquivos: " + files.Count);
+            NeodentUtil.util.LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 10 - arquivos: " + files.Count);
             files.Sort();
 
             // Pega a lista de imagens que precisam ser consideradas.
