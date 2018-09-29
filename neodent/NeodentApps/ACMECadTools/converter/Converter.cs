@@ -44,10 +44,15 @@ namespace ACMECadTools.converter
             LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 4 - Vai executar");
             process.Start();
             process.WaitForExit();
-            LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 5 - exitCode=" + process.ExitCode);
+            int exitCode = process.ExitCode;
+            LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 5 - exitCode=" + exitCode);
 
             LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 6 - Executou");
             process.Dispose();
+            if (exitCode > 0)
+            {
+                throw new System.Exception("Não foi possivel converter o arquivo usando o ACMECadConverter, exitCode=" + exitCode);
+            }
 
             string basedir = Directory.GetParent(dwfFile).FullName;
             string[] images = Directory.GetFiles(basedir);
