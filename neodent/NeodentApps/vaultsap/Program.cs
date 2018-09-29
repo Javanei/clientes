@@ -332,14 +332,17 @@ namespace vaultsap
                     }
                     else if (arg.StartsWith("-sourcedir"))
                     {
-                        List<string> dirs = new List<string>();
-                        dirs.Add(s.Substring(s.IndexOf('=') + 1));
+                        List<string> dirs = new List<string>
+                        {
+                            s.Substring(s.IndexOf('=') + 1)
+                        };
                         while (dirs.Count > 0)
                         {
                             string dir = dirs[0];
                             foreach (string f in Directory.GetFiles(dir))
                             {
-                                if (f.EndsWith(".dwf") || f.EndsWith(".pdf"))
+                                //if (f.EndsWith(".dwf") || f.EndsWith(".pdf"))
+                                if (f.EndsWith(".dwf"))
                                 {
                                     filesToConvert.Add(f);
                                 }
