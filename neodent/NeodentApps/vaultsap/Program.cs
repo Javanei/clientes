@@ -91,7 +91,7 @@ namespace vaultsap
 
             ParseParams(config, args);
 
-            if (dwfconverter == null)
+            if (dwfconverter == null && dwfconverterpath == null)
             {
                 if (dwfconverterpath.ToLower().Contains("dp.exe"))
                 {
@@ -158,6 +158,11 @@ namespace vaultsap
                 }
             }
             */
+
+            if (dwfconverter == null)
+            {
+                help = true;
+            }
 
             if (help)
             {
