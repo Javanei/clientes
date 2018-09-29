@@ -97,6 +97,13 @@ namespace TotalCadTools.converter
                         }
                     }
                 }
+
+                if (fileProps.Count == (imgToConvert.Count + 1))
+                {
+                    LOG.debug("@@@@@@@@ TotalCadTools.DwfToPDF - 12 - Todos os desenhos sao validos, entao usa o original");
+                    imgToConvert.Clear();
+                    imgToConvert.Add(pdfToConvert);
+                }
             }
 
             // Exclui as imagens nao necessarias
@@ -104,12 +111,12 @@ namespace TotalCadTools.converter
             {
                 if (!imgToConvert.Contains(file))
                 {
-                    LOG.debug("@@@@@@@@@@ TotalCadTools.DwfToPDF - 12 - excluindo arquivo: " + file);
+                    LOG.debug("@@@@@@@@@@ TotalCadTools.DwfToPDF - 13 - excluindo arquivo: " + file);
                     File.Delete(file);
                 }
             }
 
-            LOG.debug("@@@@@@@@ TotalCadTools.DwfToPDF - 13 - total final de arquivos: " + imgToConvert.Count);
+            LOG.debug("@@@@@@@@ TotalCadTools.DwfToPDF - 14 - total final de arquivos: " + imgToConvert.Count);
             return imgToConvert;
         }
     }

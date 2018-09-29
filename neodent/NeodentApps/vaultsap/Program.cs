@@ -334,8 +334,7 @@ namespace vaultsap
                             string dir = dirs[0];
                             foreach (string f in Directory.GetFiles(dir))
                             {
-                                //TODO: if (f.EndsWith(".dwf") || f.EndsWith(".pdf")) {
-                                if (f.EndsWith(".dwf"))
+                                if (f.EndsWith(".dwf") || f.EndsWith(".pdf"))
                                 {
                                     filesToConvert.Add(f);
                                 }
