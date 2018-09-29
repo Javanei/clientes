@@ -413,7 +413,7 @@ namespace VaultTools.vault
             string code = filename;
             for (int i = 0; i < validExts.Length / 2; i++)
             {
-                string ext = validExts[i, 0];
+                string ext = validExts[i, 1];
                 if (filename.EndsWith(ext))
                 {
                     code = filename.Substring(0, filename.Length - ext.Length);
