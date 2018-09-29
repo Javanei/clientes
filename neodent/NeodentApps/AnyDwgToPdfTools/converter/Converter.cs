@@ -46,7 +46,11 @@ namespace AnyDwgToPdfTools.converter
 
             NeodentUtil.util.LOG.debug("@@@@@@@@ AnyDwgToPdfTools.DwfToPDF - 4 - Vai executar");
             process.Start();
-            process.WaitForExit();
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill();
+                throw new System.Exception("Timeout convertendo para PDF o arquivo: " + dwfFile);
+            }
             NeodentUtil.util.LOG.debug("@@@@@@@@ AnyDwgToPdfTools.DwfToPDF - 5 - exitCode=" + process.ExitCode);
 
             NeodentUtil.util.LOG.debug("@@@@@@@@ AnyDwgToPdfTools.DwfToPDF - 6 - Executou");

@@ -43,7 +43,11 @@ namespace ACMECadTools.converter
 
             LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 4 - Vai executar");
             process.Start();
-            process.WaitForExit();
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill();
+                throw new System.Exception("Timeout convertendo para PDF o arquivo: " + dwfFile);
+            }
             int exitCode = process.ExitCode;
             LOG.debug("@@@@@@@@ ACMECadTools.DwfToPDF - 5 - exitCode=" + exitCode);
 

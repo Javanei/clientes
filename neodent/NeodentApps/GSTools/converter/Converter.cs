@@ -56,9 +56,18 @@ namespace GSTools.converter
 
             LOG.debug("@@@@@@@@ SplitPDF - 4 - Vai executar");
             process.Start();
-            process.WaitForExit();
-            LOG.debug("@@@@@@@@ SplitPDF - 5 - Executou - exitCode=" + process.ExitCode);
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill();
+                throw new System.Exception("Timeout fazendo split do PDF: " + sourcePdfFile);
+            }
+            int exitCode = process.ExitCode;
+            LOG.debug("@@@@@@@@ SplitPDF - 5 - Executou - exitCode=" + exitCode);
             process.Dispose();
+            if (exitCode > 0)
+            {
+                throw new System.Exception("Erro fazendo split do PDF: " + sourcePdfFile + " exitCode=" + exitCode);
+            }
 
             List<string> result = new List<string>();
             string[] files = Directory.GetFiles(basedir);
@@ -111,9 +120,18 @@ namespace GSTools.converter
 
                 LOG.debug("@@@@@@@@ MergePDFs - 5 - Vai executar");
                 process.Start();
-                process.WaitForExit();
-                LOG.debug("@@@@@@@@ MergePDFs - 6 - Executou - exitCode=" + process.ExitCode);
+                if (!process.WaitForExit(30000))
+                {
+                    process.Kill();
+                    throw new System.Exception("Timeout fazendo merge para o PDF: " + destPdfFile);
+                }
+                int exitCode = process.ExitCode;
+                LOG.debug("@@@@@@@@ MergePDFs - 6 - Executou - exitCode=" + exitCode);
                 process.Dispose();
+                if (exitCode > 0)
+                {
+                    throw new System.Exception("Erro fazendo merge para o PDF " + destPdfFile + ", exitCode=" + exitCode);
+                }
                 return true;
             }
             return false;
@@ -147,7 +165,11 @@ namespace GSTools.converter
 
             LOG.debug("@@@@@@@@ PDFToJPG - 4 - Vai executar");
             process.Start();
-            process.WaitForExit();
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill();
+                throw new System.Exception("Timeout convertendo para JPG o arquivo: " + pdfFile);
+            }
             LOG.debug("@@@@@@@@ PDFToJPG - 5 - exitCode=" + process.ExitCode);
 
             LOG.debug("@@@@@@@@ PDFToJPG - 6 - Executou");
