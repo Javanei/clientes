@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 using ADSK = Autodesk.Connectivity.WebServices;
+using NeodentUtil.util;
 
 namespace VaultTools.vault.util
 {
@@ -10,13 +11,15 @@ namespace VaultTools.vault.util
     /// </summary>
     class FindByCheckinDate
     {
-        public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager, string[] baseRepositories,
-            string[] validExt, String checkinDate, bool ignorecheckout)
+        public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager,
+            string[] baseRepositories,
+            string[,] validExts,
+            String checkinDate,
+            bool ignorecheckout)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 1 - (checkinDate=" + checkinDate + ")");
+            LOG.debug("@@@@@@ FindByCheckinDate - 1 - (checkinDate=" + checkinDate + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
 
-            //LOG.imprimeLog(System.DateTime.Now + " ===== findByCheckinDate: [" + checkinDate + "]");
             List<ADSK.File> fileList = new List<ADSK.File>();
             List<ADSK.File> fileListTmp = new List<ADSK.File>();
             List<string> allf = new List<string>();
@@ -24,11 +27,8 @@ namespace VaultTools.vault.util
             long propid;
 
             ADSK.PropDef propClientFileName = VaultUtil.GetPropertyDefinition(serviceManager, "ClientFileName");
-            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 4 - propClientFileName=" + propClientFileName);
             ADSK.PropDef propCheckInDate = VaultUtil.GetPropertyDefinition(serviceManager, "CheckInDate");
-            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 5 - propCheckInDate=" + propCheckInDate);
             ADSK.PropDef propCheckoutUserName = VaultUtil.GetPropertyDefinition(serviceManager, "CheckoutUserName");
-            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 6 - propCheckoutUserName=" + propCheckoutUserName);
             if (propCheckInDate != null)
             {
                 fileListTmp = new List<ADSK.File>();
@@ -43,14 +43,14 @@ namespace VaultTools.vault.util
                     SortAsc = true,
                     PropDefId = propid
                 };
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + (ignorecheckout ? 2 : 1)];
+                ADSK.SrchCond[] conditions = new ADSK.SrchCond[(validExts.Length / 2) + (ignorecheckout ? 2 : 1)];
                 //Condição para filtrar apenas os que não estiverem em checkout
-                for (int i = 0; i < validExt.Length; i++)
+                for (int i = 0; i < validExts.Length / 2; i++)
                 {
                     conditions[i] = new ADSK.SrchCond
                     {
                         SrchOper = Condition.CONTAINS.Code,
-                        SrchTxt = validExt[i],
+                        SrchTxt = validExts[i, 0],
                         PropTyp = ADSK.PropertySearchType.SingleProperty,
                         PropDefId = (int)propClientFileName.Id,
                         SrchRule = ADSK.SearchRuleType.May
@@ -86,23 +86,25 @@ namespace VaultTools.vault.util
                         ref bookmark, /*[out] String bookmark*/
                         out status /*[out] SrchStatus searchstatus*/
                     );
-                    NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 2 - Total encontrados=" + status.TotalHits);
+                    LOG.debug("@@@@@@ FindByCheckinDate.Find - 2 - Total encontrados=" + status.TotalHits);
                     if (files != null)
                     {
                         foreach (ADSK.File f in files)
                         {
                             fileListTmp.Add(f);
-                            foreach (string ext in validExt)
+                            for (int i = 0; i < validExts.Length / 2; i++)
                             {
-                                if (f.Name.ToLower().EndsWith(ext))
+                                if (f.Name.ToLower().EndsWith(validExts[i, 0]))
                                 {
-                                    string fcode = f.Name.Substring(0, f.Name.Length - ext.Length);
+                                    string fcode = f.Name.Substring(0, f.Name.Length - validExts[i, 0].Length);
                                     if (!allf.Contains(fcode))
                                     {
                                         allf.Add(fcode);
-                                        fileList.Add(f);
-                                        /*NeodentUtil.util.LOG.debug("@@@@@@@@ FindByCheckinDate - 3 - adicionado via data de checkin: code=" + fcode
-                                            + ", Name=" + f.Name + ", Size=" + f.FileSize + ", CkInDate=" + f.CkInDate + ", CheckedOut=" + f.CheckedOut);*/
+                                        ADSK.File file = VaultUtil.FindFileWithDownloadExtension(serviceManager, documentService, baseRepositories, fcode, f, validExts[i, 0], validExts[i, 1]);
+                                        if (file != null)
+                                        {
+                                            fileList.Add(file);
+                                        }
                                     }
                                 }
                             }
@@ -110,7 +112,7 @@ namespace VaultTools.vault.util
                     }
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByCheckinDate - 4 - result=" + fileList.Count);
+            LOG.debug("@@@@@@ FindByCheckinDate.Find - 3 - result=" + fileList.Count);
             return fileList;
         }
     }

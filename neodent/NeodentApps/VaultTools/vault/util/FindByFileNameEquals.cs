@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 using ADSK = Autodesk.Connectivity.WebServices;
+using NeodentUtil.util;
 
 namespace VaultTools.vault.util
 {
@@ -9,42 +10,48 @@ namespace VaultTools.vault.util
     /// </summary>
     class FindByFileNameEquals
     {
-        public static List<ADSK.File> FindByNameAndExtEquals(ADSKTools.WebServiceManager serviceManager, ADSK.DocumentService documentService,
-            string[] baseRepositories, string filename, string[] validExt, bool ignoreCheckout)
+        public static List<ADSK.File> FindByNameAndExtEquals(ADSKTools.WebServiceManager serviceManager,
+            ADSK.DocumentService documentService,
+            string[] baseRepositories,
+            string filename,
+            string[,] validExts,
+            bool ignoreCheckout)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 1 - (filename=" + filename
+            LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 1 - (filename=" + filename
                 + ", ignoreCheckout=" + ignoreCheckout + ")");
 
             List<ADSK.File> fl = ignoreCheckout
                 ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename)
                 : FindByNameEqualsCheckinOnly(serviceManager, documentService, baseRepositories, filename);
-            NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 2 - encontrados=" + fl.Count);
+            LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 2 - encontrados=" + fl.Count);
             if (fl.Count == 0)
             {
-                if (validExt != null && validExt.Length > 0)
+                if (validExts != null && validExts.Length > 0)
                 {
-                    foreach (string ext in validExt)
+                    for (int i = 0; i < validExts.Length / 2; i++)
                     {
-                        fl = ignoreCheckout
-                            ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename + ext)
-                            : FindByNameEqualsCheckinOnly(serviceManager, documentService, baseRepositories, filename + ext);
-                        NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 3 - encontrados com extensao '" + ext + "'=" + fl.Count);
-                        if (fl.Count > 0)
+                        List<ADSK.File> fls = ignoreCheckout
+                            ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename + validExts[i, 0])
+                            : FindByNameEqualsCheckinOnly(serviceManager, documentService, baseRepositories, filename + validExts[i, 0]);
+                        LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 3 - encontrados com extensao '" + validExts[i, 0] + "'=" + fl.Count);
+                        if (fls.Count > 0)
                         {
-                            break;
+                            fl = VaultUtil.FindFileWithDownloadExtension(serviceManager, documentService, baseRepositories, filename, fls, validExts[i, 0], validExts[i, 1]);
                         }
                     }
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 4 - resultado=" + fl.Count);
+            LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 4 - resultado=" + fl.Count);
             return fl;
         }
 
-        public static List<ADSK.File> FindByNameEqualsCheckinOnly(ADSKTools.WebServiceManager serviceManager, ADSK.DocumentService documentService,
-            string[] baseRepositories, string filename)
+        public static List<ADSK.File> FindByNameEqualsCheckinOnly(ADSKTools.WebServiceManager serviceManager,
+            ADSK.DocumentService documentService,
+            string[] baseRepositories,
+            string filename)
 
         {
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEqualsCheckinOnly - 1 - (filename=" + filename + ")");
+            LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEqualsCheckinOnly - 1 - (filename=" + filename + ")");
             /* Faz a pesquisa */
             string bookmark = string.Empty;
             ADSK.SrchStatus status = null;
@@ -71,7 +78,7 @@ namespace VaultTools.vault.util
 
             long[] folderIds = GetFoldersId.Get(documentService, baseRepositories);
 
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEqualsCheckinOnly - 2 - Vai procurar os arquivos");
+            LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEqualsCheckinOnly - 2 - Vai procurar os arquivos");
             List<ADSK.File> fileList = new List<ADSK.File>();
             while (status == null || fileList.Count < status.TotalHits)
             {
@@ -88,14 +95,16 @@ namespace VaultTools.vault.util
                 if (files != null)
                     fileList.AddRange(files);
             }
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEqualsCheckinOnly - 3 - arquivos encontrados=" + fileList.Count);
+            LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEqualsCheckinOnly - 3 - arquivos encontrados=" + fileList.Count);
             return fileList;
         }
 
-        public static List<ADSK.File> FindByNameEquals(ADSKTools.WebServiceManager serviceManager, ADSK.DocumentService documentService,
-        string[] baseRepositories, string filename)
+        public static List<ADSK.File> FindByNameEquals(ADSKTools.WebServiceManager serviceManager,
+            ADSK.DocumentService documentService,
+            string[] baseRepositories,
+            string filename)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEquals - 1 - (filename=" + filename + ")");
+            LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEquals - 1 - (filename=" + filename + ")");
             /* Faz a pesquisa */
             string bookmark = string.Empty;
             ADSK.SrchStatus status = null;
@@ -114,7 +123,7 @@ namespace VaultTools.vault.util
 
             long[] folderIds = GetFoldersId.Get(documentService, baseRepositories);
 
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEquals - 2 - Vai procurar os arquivos");
+            LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEquals - 2 - Vai procurar os arquivos");
             List<ADSK.File> fileList = new List<ADSK.File>();
             while (status == null || fileList.Count < status.TotalHits)
             {
@@ -131,7 +140,7 @@ namespace VaultTools.vault.util
                 if (files != null)
                     fileList.AddRange(files);
             }
-            NeodentUtil.util.LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEquals - 3 - arquivos encontrados=" + fileList.Count);
+            LOG.debug("@@@@@@ FindByFileNameEquals.FindByNameEquals - 3 - arquivos encontrados=" + fileList.Count);
             return fileList;
         }
     }

@@ -25,8 +25,11 @@ namespace VaultTools.vault
 
         private ADSKTools.WebServiceManager serviceManager = null;
 
-        public Manager(IDWFConverter dwfconverter, string pdfconverterexecutable, string[] baseRepositories, 
-            string[] sheetPrefix, string tempfolder)
+        public Manager(IDWFConverter dwfconverter,
+            string pdfconverterexecutable,
+            string[] baseRepositories,
+            string[] sheetPrefix,
+            string tempfolder)
         {
             this.dwfconverter = dwfconverter;
             this.pdfconverterexecutable = pdfconverterexecutable;
@@ -35,7 +38,15 @@ namespace VaultTools.vault
             this.tempfolder = tempfolder;
         }
 
-        public Manager(IDWFConverter dwfconverter, string pdfconverterexecutable, string server, string[] baseRepositories, string[] sheetPrefix, string vault, string user, string pass, string tempfolder)
+        public Manager(IDWFConverter dwfconverter,
+            string pdfconverterexecutable,
+            string server,
+            string[] baseRepositories,
+            string[] sheetPrefix,
+            string vault,
+            string user,
+            string pass,
+            string tempfolder)
         {
             this.dwfconverter = dwfconverter;
             this.pdfconverterexecutable = pdfconverterexecutable;
@@ -49,8 +60,11 @@ namespace VaultTools.vault
             serviceManager = util.VaultUtil.Login(this.server, this.vault, this.user, this.pass);
         }
 
-        public void Convert(string[] validExt, string[] sheetPrefixes, string storagefolder,
-            bool preservetemp, bool ignorecheckout)
+        public void Convert(string[,] validExts,
+            string[] sheetPrefixes,
+            string storagefolder,
+            bool preservetemp,
+            bool ignorecheckout)
         {
             LOG.info("Manager.Convert(preservetemp=" + preservetemp + ")");
 
@@ -63,56 +77,56 @@ namespace VaultTools.vault
             List<ADSK.File> files;
             if (checkInDate == null || checkInDate == "")
             {
-                files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt, ignorecheckout);
+                files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExts, ignorecheckout);
             }
             else
             {
-                files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkInDate, ignorecheckout);
+                files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExts, checkInDate, ignorecheckout);
             }
             LOG.debug("@@@@@@ Manager.Convert - 3 - desenhos encontrados=" + files.Count);
 
-            Convert(files, validExt, sheetPrefixes, storagefolder, preservetemp);
+            Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
             LOG.debug("@@@@@@ Manager.Convert - 4 - FIM");
         }
 
-        public void ConvertByCheckinDate(string checkindate, string[] validExt, string[] sheetPrefixes, string storagefolder,
+        public void ConvertByCheckinDate(string checkindate, string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool preservetemp, bool ignorecheckout)
         {
             LOG.info("Manager.ConvertByCheckinDate(checkindate=" + checkindate + ", preservetemp=" + preservetemp + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
-            List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate, ignorecheckout);
+            List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExts, checkindate, ignorecheckout);
 
             LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, sheetPrefixes, storagefolder, preservetemp);
+            Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
 
             LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 3 - FIM");
         }
 
-        public void ConvertAllInCheckin(string[] validExt, string[] sheetPrefixes, string storagefolder,
+        public void ConvertAllInCheckin(string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool preservetemp)
         {
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
-            List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt, false);
+            List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExts, false);
 
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 2 - desenhos encontrados=" + files.Count);
-            Convert(files, validExt, sheetPrefixes, storagefolder, preservetemp);
+            Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
 
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 3 - FIM");
         }
 
-        public void ConvertByFilename(string filename, string[] validExt, string[] sheetPrefixes, string storagefolder,
+        public void ConvertByFilename(string filename, string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool ignorecheckout, bool preservetemp)
         {
             LOG.info("Manager.ConvertByFilename(filename=" + filename + ", ignorecheckout=" + ignorecheckout + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByFileNameEquals.FindByNameAndExtEquals(serviceManager, documentService,
-                baseRepositories, filename, validExt, ignorecheckout);
+                baseRepositories, filename, validExts, ignorecheckout);
             if (files.Count == 1)
             {
                 ADSK.File file = files[0];
-                string desenho = GetCode(file.Name, validExt);
-                Convert(file, desenho, validExt, sheetPrefixes, storagefolder, preservetemp);
+                string desenho = GetCode(file.Name, validExts);
+                Convert(file, desenho, validExts, sheetPrefixes, storagefolder, preservetemp);
 
                 LOG.debug("@@@@@@ Manager.ConvertByFilename - 2 - FIM");
             }
@@ -161,7 +175,7 @@ namespace VaultTools.vault
             }
         }
 
-        public void List(string[] validExt, bool ignorecheckout)
+        public void List(string[,] validExts, bool ignorecheckout)
         {
             LOG.info("Manager.List()");
 
@@ -174,11 +188,11 @@ namespace VaultTools.vault
             List<ADSK.File> files;
             if (checkInDate == null || checkInDate == "")
             {
-                files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt, ignorecheckout);
+                files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExts, ignorecheckout);
             }
             else
             {
-                files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkInDate, ignorecheckout);
+                files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExts, checkInDate, ignorecheckout);
             }
             LOG.debug("@@@@@@ Manager.List - 3 - desenhos encontrados=" + files.Count);
 
@@ -186,22 +200,22 @@ namespace VaultTools.vault
             LOG.debug("@@@@@@ Manager.List - 4 - FIM");
         }
 
-        public void ListByCheckinDate(string checkindate, string[] validExt, bool ignorecheckout)
+        public void ListByCheckinDate(string checkindate, string[,] validExts, bool ignorecheckout)
         {
             LOG.info("Manager.ListByCheckinDate(checkindate=" + checkindate + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
-            List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExt, checkindate, ignorecheckout);
+            List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExts, checkindate, ignorecheckout);
 
             LOG.debug("@@@@@@ Manager.ListByCheckinDate - 2 - desenhos encontrados=" + files.Count);
             List(files);
             LOG.debug("@@@@@@ Manager.ListByCheckinDate - 3 - FIM - " + files.Count);
         }
 
-        public void ListtAllInCheckin(string[] validExt, bool ignorecheckout)
+        public void ListtAllInCheckin(string[,] validExts, bool ignorecheckout)
         {
             LOG.info("Manager.ListtAllInCheckin()");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
-            List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExt, ignorecheckout);
+            List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExts, ignorecheckout);
 
             LOG.debug("@@@@@@ Manager.ListtAllInCheckin - 2 - desenhos encontrados=" + files.Count);
             List(files);
@@ -209,11 +223,11 @@ namespace VaultTools.vault
             LOG.debug("@@@@@@ Manager.ListtAllInCheckin - 3 - FIM - " + files.Count);
         }
 
-        public void ListAllCheckedOut(string[] validExt)
+        public void ListAllCheckedOut(string[,] validExts)
         {
             LOG.info("Manager.ListAllCheckedOut()");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
-            List<ADSK.File> files = util.FindByCheckedOut.Find(serviceManager, baseRepositories, validExt);
+            List<ADSK.File> files = util.FindByCheckedOut.Find(serviceManager, baseRepositories, validExts);
 
             LOG.debug("@@@@@@ Manager.ListAllCheckedOut - 2 - desenhos encontrados=" + files.Count);
             List(files);
@@ -250,7 +264,7 @@ namespace VaultTools.vault
             Console.WriteLine("***************************");
         }
 
-        public bool ConvertAlreadyDownloadedFile(string filedir, string filename, string[] validExt, string[] sheetPrefixes, 
+        public bool ConvertAlreadyDownloadedFile(string filedir, string filename, string[,] validExts, string[] sheetPrefixes,
             string storagefolder, bool preservetemp)
         {
             LOG.info("Manager.ConvertAlreadyDownloadedFile(filedir=" + filedir + ", filename=" + filename + ")");
@@ -258,7 +272,7 @@ namespace VaultTools.vault
             bool result = false;
 
             Dictionary<string, string> fileInfo = new Dictionary<string, string>();
-            string desenho = GetCode(filename, validExt);
+            string desenho = GetCode(filename, validExts);
             LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 2 - desenho=" + desenho);
 
             // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
@@ -293,7 +307,7 @@ namespace VaultTools.vault
 
         // ==================
 
-        private void Convert(List<ADSK.File> files, string[] validExt, string[] sheetPrefixes, string storagefolder,
+        private void Convert(List<ADSK.File> files, string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool preservetemp)
         {
             Dictionary<string, string> config = DictionaryUtil.ReadPropertyFile(confFile);
@@ -303,12 +317,12 @@ namespace VaultTools.vault
             foreach (ADSK.File file in files)
             {
                 Dictionary<string, string> fileInfo = new Dictionary<string, string>();
-                string desenho = GetCode(file.Name, validExt);
+                string desenho = GetCode(file.Name, validExts);
                 //string cfgFile = storagefolder + "\\" + desenho + ".cfg";
 
                 contador++;
                 LOG.debug("===================== Vai converter arquivo [" + contador + "] de [" + files.Count + "] - " + file.Name);
-                bool converteu = Convert(file, desenho, validExt, sheetPrefixes, storagefolder, preservetemp);
+                bool converteu = Convert(file, desenho, validExts, sheetPrefixes, storagefolder, preservetemp);
                 LOG.debug("===================== Converteu " + file.Name + "? " + converteu);
 
                 DictionaryUtil.SetProperty(config, "LastCheckInDate", file.CkInDate.ToUniversalTime().ToString("MM/dd/yyyy HH:mm:ss"));
@@ -354,7 +368,7 @@ namespace VaultTools.vault
             return result;
         }
 
-        private bool Convert(ADSK.File file, string desenho, string[] validExt, string[] sheetPrefixes, string storagefolder,
+        private bool Convert(ADSK.File file, string desenho, string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool preservetemp)
         {
             bool result = false;
@@ -394,11 +408,12 @@ namespace VaultTools.vault
             return result;
         }
 
-        private string GetCode(string filename, string[] validExt)
+        private string GetCode(string filename, string[,] validExts)
         {
             string code = filename;
-            foreach (string ext in validExt)
+            for (int i = 0; i < validExts.Length / 2; i++)
             {
+                string ext = validExts[i, 0];
                 if (filename.EndsWith(ext))
                 {
                     code = filename.Substring(0, filename.Length - ext.Length);

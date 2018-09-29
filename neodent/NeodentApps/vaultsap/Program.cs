@@ -41,7 +41,11 @@ namespace vaultsap
         private static List<string> toConvert = new List<string>();
         private static List<string> filesToConvert = new List<string>();
 
-        private static readonly string[] validExt = new string[] { ".idw.dwf", ".dwg.dwf", ".pdf" };
+        private static readonly string[,] validExts = new string[,] { 
+            { ".idw", ".idw.dwf" }, 
+            { ".dwg", ".dwg.dwf" }, 
+            { ".pdf", ".pdf" }
+        };
         private static readonly string confFile = "vaultsap.conf";
 
         [STAThread]
@@ -210,7 +214,7 @@ namespace vaultsap
                             {
                                 string dir = Directory.GetParent(f).FullName;
                                 string file = Path.GetFileName(f);
-                                manager.ConvertAlreadyDownloadedFile(dir, file, validExt, sheetPrefixes, storagefolder, preservetemp);
+                                manager.ConvertAlreadyDownloadedFile(dir, file, validExts, sheetPrefixes, storagefolder, preservetemp);
                             }
                         }
                         else if (toConvert.Count > 0)
@@ -223,23 +227,23 @@ namespace vaultsap
                                 }
                                 else
                                 {
-                                    manager.ConvertByFilename(desenho, validExt, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
+                                    manager.ConvertByFilename(desenho, validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
                                 }
                             }
                         }
                         else if (convertall)
                         {
-                            manager.Convert(validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                            manager.Convert(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                         }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.Convert(validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                                manager.Convert(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                             }
                             else
                             {
-                                manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                                manager.ConvertByCheckinDate(checkindate, validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                             }
                         }
                         else if (listpropertydef)
@@ -248,23 +252,23 @@ namespace vaultsap
                         }
                         else if (list)
                         {
-                            manager.List(validExt, ignorecheckout);
+                            manager.List(validExts, ignorecheckout);
                         }
                         else if (listbycheckindate)
                         {
-                            manager.ListByCheckinDate(checkindate, validExt, ignorecheckout);
+                            manager.ListByCheckinDate(checkindate, validExts, ignorecheckout);
                         }
                         else if (listcheckedout)
                         {
-                            manager.ListAllCheckedOut(validExt);
+                            manager.ListAllCheckedOut(validExts);
                         }
                         else if (listall)
                         {
-                            manager.ListtAllInCheckin(validExt, ignorecheckout);
+                            manager.ListtAllInCheckin(validExts, ignorecheckout);
                         }
                         else if (checkindate != null)
                         {
-                            manager.ConvertByCheckinDate(checkindate, validExt, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                            manager.ConvertByCheckinDate(checkindate, validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                         }
                     }
                     finally
