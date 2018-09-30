@@ -270,38 +270,46 @@ namespace VaultTools.vault
             LOG.info("Manager.ConvertAlreadyDownloadedFile(filedir=" + filedir + ", filename=" + filename + ")");
 
             bool result = false;
-
-            Dictionary<string, string> fileInfo = new Dictionary<string, string>();
-            string desenho = GetCode(filename, validExts);
-            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 2 - desenho=" + desenho);
-
-            // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
-            string imgTempfolder = tempfolder + "\\" + desenho.Trim();
-            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 3 - imgTempfolder=" + imgTempfolder);
-
-            // Por garantia, limpa o diretorio temporario
-            ClearDirectory(imgTempfolder);
-
-            // Cria o diretório temporario da imagem
-            if (!Directory.Exists(imgTempfolder))
+            try
             {
-                Directory.CreateDirectory(imgTempfolder);
-            }
+                Dictionary<string, string> fileInfo = new Dictionary<string, string>();
+                string desenho = GetCode(filename, validExts);
+                LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 2 - desenho=" + desenho);
 
-            string filepath = imgTempfolder + "\\" + filename;
-            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 4 - filepath=" + filepath);
+                // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
+                string imgTempfolder = tempfolder + "\\" + desenho.Trim();
+                LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 3 - imgTempfolder=" + imgTempfolder);
 
-            // Copia o desenho para a pasta temporaria
-            File.Copy(filedir + "\\" + filename, filepath);
-
-            result = ConvertFile(filepath, desenho, sheetPrefixes, storagefolder);
-
-            // Limpa o diretorio temporario
-            if (!preservetemp)
-            {
+                // Por garantia, limpa o diretorio temporario
                 ClearDirectory(imgTempfolder);
+
+                // Cria o diretório temporario da imagem
+                if (!Directory.Exists(imgTempfolder))
+                {
+                    Directory.CreateDirectory(imgTempfolder);
+                }
+
+                string filepath = imgTempfolder + "\\" + filename;
+                LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 4 - filepath=" + filepath);
+
+                // Copia o desenho para a pasta temporaria
+                File.Copy(filedir + "\\" + filename, filepath);
+
+                result = ConvertFile(filepath, desenho, sheetPrefixes, storagefolder);
+
+                // Limpa o diretorio temporario
+                if (!preservetemp)
+                {
+                    ClearDirectory(imgTempfolder);
+                }
+                LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 5 - result=" + result);
             }
-            LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 5 - result=" + result);
+            catch (Exception ex)
+            {
+                LOG.error("Erro convertendo arquivo: " + filedir + "\\" + filename);
+                LOG.error(ex.StackTrace);
+                LOG.error("====================================================");
+            }
             return result;
         }
 
@@ -372,39 +380,49 @@ namespace VaultTools.vault
             bool preservetemp)
         {
             bool result = false;
-            LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate
-                + ", CheckedOut=" + file.CheckedOut + ", CkOutUserId=" + file.CkOutUserId);
-            LOG.debug("@@@@@@@@@@ Manager.Convert - 2 - desenho=" + desenho);
-
-            // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
-            string imgTempfolder = tempfolder + "\\" + desenho.Trim();
-            LOG.debug("@@@@@@@@@@ Manager.Convert - 3 - imgTempfolder=" + imgTempfolder);
-
-            // Por garantia, limpa o diretorio temporario
-            ClearDirectory(imgTempfolder);
-
-            // Cria o diretório temporario da imagem
-            if (!Directory.Exists(imgTempfolder))
+            try
             {
-                Directory.CreateDirectory(imgTempfolder);
-            }
+                LOG.debug("@@@@@@@@@@ Manager.Convert - 1 - Name=" + file.Name + ", CkInDate=" + file.CkInDate
+                    + ", CheckedOut=" + file.CheckedOut + ", CkOutUserId=" + file.CkOutUserId);
+                LOG.debug("@@@@@@@@@@ Manager.Convert - 2 - desenho=" + desenho);
 
-            // Faz o download do arquivo
-            DownloadFast downloadFast = new DownloadFast(serviceManager, user, pass, vault,
-                serviceManager.AdminService.SecurityHeader.UserId, server);
-            downloadFast.DownloadFile(file, imgTempfolder);
-            string downFile = imgTempfolder + "\\" + file.Name;
-            LOG.debug("@@@@@@@@@@ Manager.Convert - 4 - Download efetuado - " + downFile + " - " + File.Exists(downFile));
-            File.SetAttributes(downFile, FileAttributes.Normal);
+                // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
+                string imgTempfolder = tempfolder + "\\" + desenho.Trim();
+                LOG.debug("@@@@@@@@@@ Manager.Convert - 3 - imgTempfolder=" + imgTempfolder);
 
-            result = ConvertFile(downFile, desenho, sheetPrefixes, storagefolder);
-
-            // Limpa o diretorio temporario
-            if (!preservetemp)
-            {
+                // Por garantia, limpa o diretorio temporario
                 ClearDirectory(imgTempfolder);
+
+                // Cria o diretório temporario da imagem
+                if (!Directory.Exists(imgTempfolder))
+                {
+                    Directory.CreateDirectory(imgTempfolder);
+                }
+
+                // Faz o download do arquivo
+                DownloadFast downloadFast = new DownloadFast(serviceManager, user, pass, vault,
+                    serviceManager.AdminService.SecurityHeader.UserId, server);
+                downloadFast.DownloadFile(file, imgTempfolder);
+                string downFile = imgTempfolder + "\\" + file.Name;
+                LOG.debug("@@@@@@@@@@ Manager.Convert - 4 - Download efetuado - " + downFile + " - " + File.Exists(downFile));
+                File.SetAttributes(downFile, FileAttributes.Normal);
+
+                result = ConvertFile(downFile, desenho, sheetPrefixes, storagefolder);
+
+                // Limpa o diretorio temporario
+                if (!preservetemp)
+                {
+                    ClearDirectory(imgTempfolder);
+                }
+                LOG.debug("@@@@@@@@@@ Manager.Convert - 8 - FIM");
             }
-            LOG.debug("@@@@@@@@@@ Manager.Convert - 8 - FIM");
+            catch (Exception ex)
+            {
+                LOG.error("Erro convertendo arquivo: " + file.Name);
+                LOG.error(ex.StackTrace);
+                LOG.error("====================================================");
+                //TODO: Salvar desenho para conversão posterior
+            }
             return result;
         }
 

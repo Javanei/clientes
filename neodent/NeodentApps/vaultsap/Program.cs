@@ -104,6 +104,9 @@ namespace vaultsap
                 else if (dwfconverterpath.ToLower().Contains("cadconverterx64.exe"))
                 {
                     dwfconverter = new TotalCadTools.converter.Converter(dwfconverterpath, pdfconverterpath);
+                } else if (dwfconverterpath.ToLower().Contains("bullzip"))
+                {
+                    dwfconverter = new BullzipPDFTools.converter.Converter();
                 }
                 else
                 {

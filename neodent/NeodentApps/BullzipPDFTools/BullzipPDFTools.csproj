@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{12C80F88-0813-4A3F-AF5C-029BB2BE6ABE}</ProjectGuid>
+    <ProjectGuid>{3D05AA33-8715-4067-8EBC-7BC1CCA06370}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>NeodentUtil</RootNamespace>
-    <AssemblyName>NeodentUtil</AssemblyName>
+    <RootNamespace>BullzipPDFTools</RootNamespace>
+    <AssemblyName>BullzipPDFTools</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -32,9 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Bullzip.PDFWriter, Version=4.0.0.0, Culture=neutral, PublicKeyToken=041d71cacb6e853c, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -43,12 +43,23 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="converter\BullzipPDFOptions.cs" />
+    <Compile Include="converter\Converter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="util\DictionaryUtil.cs" />
-    <Compile Include="util\ImageUtil.cs" />
-    <Compile Include="util\LOG.cs" />
-    <Compile Include="util\ProcessUtil.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\DWFCore\DWFCore.csproj">
+      <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
+      <Name>DWFCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DWFTools\DWFTools.csproj">
+      <Project>{989e4b71-6689-4f92-a9b5-e50a91ed5b8f}</Project>
+      <Name>DWFTools</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
+      <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
+      <Name>NeodentUtil</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

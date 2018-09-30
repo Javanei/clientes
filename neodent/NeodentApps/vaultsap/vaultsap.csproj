@@ -131,6 +131,10 @@
       <Project>{a0329944-8ecf-4c28-ae99-3c04f5dbec3c}</Project>
       <Name>AnyDwgToPdfTools</Name>
     </ProjectReference>
+    <ProjectReference Include="..\BullzipPDFTools\BullzipPDFTools.csproj">
+      <Project>{3d05aa33-8715-4067-8ebc-7bc1cca06370}</Project>
+      <Name>BullzipPDFTools</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DWFCore\DWFCore.csproj">
       <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
       <Name>DWFCore</Name>
