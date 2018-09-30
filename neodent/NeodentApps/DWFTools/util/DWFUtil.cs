@@ -84,6 +84,7 @@ namespace DWFTools.util
                 }
             }
             reader.Close();
+            NeodentUtil.util.DictionaryUtil.SetProperty(d, "-1=", sheetNum.ToString());
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 4 - Fez o parser do arquivo: " + fileName);
             return d;
         }

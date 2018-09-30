@@ -53,7 +53,7 @@ namespace TotalCadTools.converter
             Dictionary<string, string> fileProps = new Dictionary<string, string>();
             DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps, sheetPrefixes);
             LOG.debug("@@@@@@@@ TotalCadTools.DwfToPDF - 5 - fileProps: " + fileProps.Count);
-            if (fileProps.Count > 1)
+            if (fileProps.Count > 2)
             {
                 //Encontrou desenhos
                 GSTools.converter.Converter pdfsplit = new GSTools.converter.Converter(pdfExecutablePath);
