@@ -1,6 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using Bullzip.PdfWriter;
 
@@ -77,7 +77,16 @@ namespace BullzipPDFTools.converter
 
             string printerName = settings.PrinterName;
 
-            ProcessUtil.PrintFile(dwfFile, printerName, 60000);
+            try
+            {
+                ProcessUtil.PrintFile(dwfFile, printerName, 60000);
+            }
+            catch (Exception ex)
+            {
+                // Encerra também o processo de envio de dump pra Autodesk
+                ProcessUtil.KillByImageName("senddmp.exe");
+                throw ex;
+            }
 
             // Aguarda a criaçao do arquivo de LOG
             LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 8 - Aguardando a geracao do arquivo de log: " + logFile);

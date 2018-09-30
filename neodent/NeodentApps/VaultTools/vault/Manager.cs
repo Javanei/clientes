@@ -12,6 +12,8 @@ namespace VaultTools.vault
 {
     public class Manager
     {
+        private static readonly string ErrorList = "vaultsap.err.conf";
+
         private IDWFConverter dwfconverter;
         private string pdfconverterexecutable;
         private string[] baseRepositories;
@@ -68,6 +70,9 @@ namespace VaultTools.vault
         {
             LOG.info("Manager.Convert(preservetemp=" + preservetemp + ")");
 
+            // Reprocessa os desenhos anteriores
+            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
+
             // Le o arquivo de configuração
             Dictionary<string, string> config = DictionaryUtil.ReadPropertyFile(confFile);
             DictionaryUtil.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
@@ -86,6 +91,10 @@ namespace VaultTools.vault
             LOG.debug("@@@@@@ Manager.Convert - 3 - desenhos encontrados=" + files.Count);
 
             Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
+
+            // Reprocessa os desenhos que deram erro
+            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
+
             LOG.debug("@@@@@@ Manager.Convert - 4 - FIM");
         }
 
@@ -93,11 +102,18 @@ namespace VaultTools.vault
             bool preservetemp, bool ignorecheckout)
         {
             LOG.info("Manager.ConvertByCheckinDate(checkindate=" + checkindate + ", preservetemp=" + preservetemp + ")");
+
+            // Reprocessa os desenhos anteriores
+            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
+
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExts, checkindate, ignorecheckout);
 
             LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 2 - desenhos encontrados=" + files.Count);
             Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
+
+            // Reprocessa os desenhos que deram erro
+            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
 
             LOG.debug("@@@@@@ Manager.ConvertByCheckinDate - 3 - FIM");
         }
@@ -115,9 +131,10 @@ namespace VaultTools.vault
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 3 - FIM");
         }
 
-        public void ConvertByFilename(string filename, string[,] validExts, string[] sheetPrefixes, string storagefolder,
+        public bool ConvertByFilename(string filename, string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool ignorecheckout, bool preservetemp)
         {
+            bool result = false;
             LOG.info("Manager.ConvertByFilename(filename=" + filename + ", ignorecheckout=" + ignorecheckout + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindByFileNameEquals.FindByNameAndExtEquals(serviceManager, documentService,
@@ -126,7 +143,7 @@ namespace VaultTools.vault
             {
                 ADSK.File file = files[0];
                 string desenho = GetCode(file.Name, validExts);
-                Convert(file, desenho, validExts, sheetPrefixes, storagefolder, preservetemp);
+                result = Convert(file, desenho, validExts, sheetPrefixes, storagefolder, preservetemp);
 
                 LOG.debug("@@@@@@ Manager.ConvertByFilename - 2 - FIM");
             }
@@ -138,6 +155,7 @@ namespace VaultTools.vault
             {
                 throw new Exception("Nenhum desenho encontrado para o nome '" + filename + "'");
             }
+            return result;
         }
 
         public void Close()
@@ -269,11 +287,12 @@ namespace VaultTools.vault
         {
             LOG.info("Manager.ConvertAlreadyDownloadedFile(filedir=" + filedir + ", filename=" + filename + ")");
 
+            string desenho = GetCode(filename, validExts);
+
             bool result = false;
             try
             {
                 Dictionary<string, string> fileInfo = new Dictionary<string, string>();
-                string desenho = GetCode(filename, validExts);
                 LOG.debug("@@@@@@@@@@ Manager.ConvertAlreadyDownloadedFile - 2 - desenho=" + desenho);
 
                 // Usa um diretorio por imagem para evitar problemas em deletar os arquivos
@@ -309,11 +328,67 @@ namespace VaultTools.vault
                 LOG.error("Erro convertendo arquivo: " + filedir + "\\" + filename);
                 LOG.error(ex.StackTrace);
                 LOG.error("====================================================");
+                SaveToNextConvertion(desenho, filedir + "\\" + filename);
             }
             return result;
         }
 
         // ==================
+
+        private void SaveToNextConvertion(string code, string name)
+        {
+            Dictionary<string, string> erros = new Dictionary<string, string>();
+            if (File.Exists(ErrorList))
+            {
+                erros = DictionaryUtil.ReadPropertyFile(ErrorList);
+            }
+            DictionaryUtil.SetProperty(erros, code, name);
+            DictionaryUtil.WritePropertyFile(ErrorList, erros);
+        }
+
+        private void ProcessErrorsFromPreviousConvertion(string[,] validExts,
+            string[] sheetPrefixes,
+            string storagefolder,
+            bool ignorecheckout,
+            bool preservetemp)
+        {
+            if (File.Exists(ErrorList))
+            {
+                Dictionary<string, string> erros = DictionaryUtil.ReadPropertyFile(ErrorList);
+                if (erros.Count > 0)
+                {
+                    LOG.info("Reprocessando arquivos que deram erros na conversao anterior: " + erros.Count);
+                    string[] keys = new string[erros.Count];
+                    int cont = 0;
+                    foreach (string desenho in erros.Keys)
+                    {
+                        keys[cont] = desenho;
+                        cont++;
+                    }
+                    foreach (string desenho in keys)
+                    {
+                        LOG.debug("@@@@@@@@@@ Manager.ProcessErrorsFromPreviousConvertion - 2 - Reprocessando desenho: " + desenho);
+                        if (ConvertByFilename(desenho, validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp))
+                        {
+                            LOG.debug("@@@@@@@@@@ Manager.ProcessErrorsFromPreviousConvertion - 3 - Conversao OK");
+                            erros.Remove(desenho);
+                        }
+                        else
+                        {
+                            LOG.debug("@@@@@@@@@@ Manager.ProcessErrorsFromPreviousConvertion - 4 - Nao conseguiu converter. Manter na lista");
+                        }
+                    }
+                    if (erros.Count > 0)
+                    {
+                        DictionaryUtil.WritePropertyFile(ErrorList, erros);
+                    }
+                    else
+                    {
+                        File.Delete(ErrorList);
+                    }
+                }
+            }
+        }
 
         private void Convert(List<ADSK.File> files, string[,] validExts, string[] sheetPrefixes, string storagefolder,
             bool preservetemp)
@@ -376,7 +451,12 @@ namespace VaultTools.vault
             return result;
         }
 
-        private bool Convert(ADSK.File file, string desenho, string[,] validExts, string[] sheetPrefixes, string storagefolder,
+        private bool Convert(ADSK.File file,
+            string desenho,
+            string[,]
+            validExts,
+            string[] sheetPrefixes,
+            string storagefolder,
             bool preservetemp)
         {
             bool result = false;
@@ -421,7 +501,7 @@ namespace VaultTools.vault
                 LOG.error("Erro convertendo arquivo: " + file.Name);
                 LOG.error(ex.StackTrace);
                 LOG.error("====================================================");
-                //TODO: Salvar desenho para conversão posterior
+                SaveToNextConvertion(desenho, file.Name);
             }
             return result;
         }
