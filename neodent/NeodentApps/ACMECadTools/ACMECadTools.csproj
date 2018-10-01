@@ -21,7 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -46,6 +46,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DWFCore\DWFCore.csproj">
+      <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
+      <Name>DWFCore</Name>
+    </ProjectReference>
     <ProjectReference Include="..\DWFTools\DWFTools.csproj">
       <Project>{989e4b71-6689-4f92-a9b5-e50a91ed5b8f}</Project>
       <Name>DWFTools</Name>

@@ -7,7 +7,7 @@ namespace DWFTools.util
 {
     public class DWFUtil
     {
-        public static Dictionary<string, string> Extract(String dir, String fileName, Dictionary<string, string> d)
+        public static Dictionary<string, string> Extract(String dir, String fileName, Dictionary<string, string> d, string[] sheetPrefixes)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@ Extract - 1 - (dir=" + dir + ", fileName=" + fileName + ") - Vai extrair o manifext.xml");
             NeodentUtil.util.DictionaryUtil.SetProperty(d, "0", "False=Extract");
@@ -24,14 +24,14 @@ namespace DWFTools.util
                 zip1.Dispose();
             }
             NeodentUtil.util.LOG.debug("@@@@@@@@ Extract - 2 - Extraiu o manifext.xml");
-            d = ParseXml(dir + "\\manifest.xml", d);
+            d = ParseXml(dir + "\\manifest.xml", d, sheetPrefixes);
             return d;
         }
 
         /**
          * Interpreta o manifest.xml
          */
-        private static Dictionary<string, string> ParseXml(String fileName, Dictionary<string, string> d)
+        private static Dictionary<string, string> ParseXml(String fileName, Dictionary<string, string> d, string[] sheetPrefixes)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 1 - (fileName=" + fileName + ") - Vai fazer o parser do arquivo: " + fileName);
             NeodentUtil.util.DictionaryUtil.SetProperty(d, "0", "False=parseXml");
@@ -47,9 +47,9 @@ namespace DWFTools.util
                             //Console.WriteLine(reader.Name);
                             if (reader.HasAttributes)
                             {
-                                String sheetName = null;
-                                String sheetPrefix = null;
-                                Boolean processar = false;
+                                string sheetName = null;
+                                string sheetPrefix = null;
+                                bool processar = false;
                                 for (int i = 0; i < reader.AttributeCount; i++)
                                 {
                                     reader.MoveToAttribute(i);
@@ -59,36 +59,19 @@ namespace DWFTools.util
                                         processar = true;
                                         sheetNum++;
                                     }
-                                    //if (processar && reader.Name.Equals("title") && reader.Value.ToLower().IndexOf("sheet") >= 0)
-                                    if (processar && reader.Name.Equals("title") && reader.Value.ToLower().IndexOf("op_") >= 0)
+                                    if (processar && reader.Name.Equals("title"))
                                     {
-                                        sheetName = reader.Value;
-                                        NeodentUtil.util.LOG.debug("@@@@@@@@@@@@ ParseXml - 2 - encontrou sheet: " + sheetName);
-                                        //sheetPrefix = "OP";
-                                        //Console.WriteLine("    " + reader.Name + " = " + reader.Value);
+                                        foreach (string s in sheetPrefixes)
+                                        {
+                                            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + reader.Value + ", prefix=" + s);
+                                            if (reader.Value.ToLower().IndexOf(s) >= 0)
+                                            {
+                                                sheetName = reader.Value;
+                                                sheetPrefix = s.Substring(0, 2).ToUpper();
+                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 3 - encontrou sheet: " + sheetName);
+                                            }
+                                        }
                                     }
-                                    /*
-                                    else if (processar && reader.Name.Equals("title") && reader.Value.ToLower().IndexOf("ps_") >= 0)
-                                    {
-                                        sheetName = reader.Value;
-                                        sheetPrefix = "PS";
-                                    }
-                                    else if (processar && reader.Name.Equals("title") && reader.Value.ToLower().IndexOf("anvisa") >= 0)
-                                    {
-                                        sheetName = reader.Value;
-                                        sheetPrefix = "ANVISA";
-                                    }
-                                    else if (processar && reader.Name.Equals("title") && reader.Value.ToLower().IndexOf("fda") >= 0)
-                                    {
-                                        sheetName = reader.Value;
-                                        sheetPrefix = "FDA";
-                                    }
-                                    else if (processar && reader.Name.Equals("title") && reader.Value.ToLower().IndexOf("des") >= 0)
-                                    {
-                                        sheetName = reader.Value;
-                                        sheetPrefix = "DES";
-                                    }
-                                    */
                                 }
                                 if (sheetName != null)
                                 {
@@ -101,7 +84,8 @@ namespace DWFTools.util
                 }
             }
             reader.Close();
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 3 - Fez o parser do arquivo: " + fileName);
+            NeodentUtil.util.DictionaryUtil.SetProperty(d, "-1", sheetNum.ToString());
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 4 - Fez o parser do arquivo: " + fileName);
             return d;
         }
     }

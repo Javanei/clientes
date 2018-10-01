@@ -30,6 +30,7 @@ namespace VaultTools.vault
 
         public void DownloadFile(ADSK.File file, string filePath)
         {
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@@@@@@ DownloadFile - file=" + file.Name + " na pasta " + filePath);
             VDF.Vault.Currency.Entities.FileIteration fileIter = new VDF.Vault.Currency.Entities.FileIteration(this.m_conn, file);
             VDF.Vault.Settings.AcquireFilesSettings settings = new VDF.Vault.Settings.AcquireFilesSettings(m_conn)
             {

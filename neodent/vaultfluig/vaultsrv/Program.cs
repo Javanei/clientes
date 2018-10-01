@@ -113,6 +113,19 @@ namespace vaultsrv
                 }
             }
 
+            if (true)
+            {
+                ADSK.ServerIdentities si = new ADSK.ServerIdentities();
+                si.DataServer = Program.server;
+                si.FileServer = Program.server;
+                LOG.imprimeLog(DateTime.Now + " ==== Vai logar no Vault no servidor [" + Program.server + "], database [" + Program.vault + "], usuario [" + Program.user + "]");
+                ADSKTools.IWebServiceCredentials login = new ADSKTools.UserPasswordCredentials(si, Program.vault, Program.user, Program.pass);
+                serviceManager = new ADSKTools.WebServiceManager(login);
+                LOG.imprimeLog(DateTime.Now + " ===== LOGOU!!!");
+
+                return;
+            }
+
             // Le o arquivo de configuração
             //config = ReadPropertyFile(Directory.GetCurrentDirectory() + "\\vaultsrv.conf");
             LOG.imprimeLog(System.DateTime.Now + " === Vai ler o arquivo de configuracao=" + downdir + "vaultsrv.conf");

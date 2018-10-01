@@ -1,16 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 using ADSK = Autodesk.Connectivity.WebServices;
 
+using NeodentUtil.util;
+
 namespace VaultTools.vault.util
 {
+    /// <summary>
+    /// Lista todos os desenhos em checkin
+    /// </summary>
     class FindAllInCheckin
     {
-        public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager, string[] baseRepositories, string[] validExt)
+        public static List<ADSK.File> Find(ADSKTools.WebServiceManager serviceManager,
+            string[] baseRepositories,
+            string[,] validExts,
+            bool ignorecheckout)
         {
-            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 1");
+            LOG.debug("@@@@@@ FindAllInCheckin.Find - 1");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
+            LOG.debug("@@@@@@ FindAllInCheckin.Find - 2");
 
             List<ADSK.File> fileList = new List<ADSK.File>();
             List<ADSK.File> fileListTmp = new List<ADSK.File>();
@@ -33,29 +41,33 @@ namespace VaultTools.vault.util
                     SortAsc = true,
                     PropDefId = (int)propCheckInDate.Id
                 };
+                LOG.debug("@@@@@@ FindAllInCheckin.Find - 3");
 
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[validExt.Length + 1];
+                ADSK.SrchCond[] conditions = new ADSK.SrchCond[(validExts.Length / 2) + (ignorecheckout ? 0 : 1)];
                 //Condição para filtrar apenas os que não estiverem em checkout
-                conditions[0] = new ADSK.SrchCond
+                for (int i = 0; i < validExts.Length / 2; i++)
                 {
-                    SrchOper = Condition.IS_EMPTY.Code,
-                    PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = (int)propCheckoutUserName.Id,
-                    SrchRule = ADSK.SearchRuleType.Must
-                };
-                for (int i = 0; i < validExt.Length; i++)
-                {
-                    conditions[i + 1] = new ADSK.SrchCond
+                    conditions[i] = new ADSK.SrchCond
                     {
                         SrchOper = Condition.CONTAINS.Code,
-                        SrchTxt = validExt[i],
+                        SrchTxt = validExts[i, 0],
                         PropTyp = ADSK.PropertySearchType.SingleProperty,
                         PropDefId = (int)propClientFileName.Id,
                         SrchRule = ADSK.SearchRuleType.May
                     };
                 }
+                if (ignorecheckout)
+                {
+                    conditions[conditions.Length - 1] = new ADSK.SrchCond
+                    {
+                        SrchOper = Condition.IS_EMPTY.Code,
+                        PropTyp = ADSK.PropertySearchType.SingleProperty,
+                        PropDefId = (int)propCheckoutUserName.Id,
+                        SrchRule = ADSK.SearchRuleType.Must
+                    };
+                }
+                LOG.debug("@@@@@@ FindAllInCheckin.Find - 4 - conditions=" + conditions);
 
-                NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 2 - Total encontrados=" + status.TotalHits);
                 while (status == null || fileListTmp.Count < status.TotalHits)
                 {
                     ADSK.File[] files = documentService.FindFilesBySearchConditions(
@@ -67,22 +79,31 @@ namespace VaultTools.vault.util
                         ref bookmark, /*[out] String bookmark*/
                         out status /*[out] SrchStatus searchstatus*/
                     );
+                    LOG.debug("@@@@@@ FindAllInCheckin.Find - 5 - Total encontrados=" + status.TotalHits);
                     if (files != null)
                     {
                         foreach (ADSK.File f in files)
                         {
                             fileListTmp.Add(f);
-                            foreach (string ext in validExt)
+                            for (int i = 0; i < validExts.Length / 2; i++)
                             {
-                                if (f.Name.ToLower().EndsWith(ext))
+                                if (f.Name.ToLower().EndsWith(validExts[i, 0]))
                                 {
-                                    string fcode = f.Name.Substring(0, f.Name.Length - ext.Length);
+                                    string fcode = f.Name.Substring(0, f.Name.Length - validExts[i, 0].Length);
                                     if (!allf.Contains(fcode))
                                     {
                                         allf.Add(fcode);
-                                        fileList.Add(f);
-                                        NeodentUtil.util.LOG.debug("@@@@@@@@ FindAllInCheckin - 3 - adicionado: code=" + fcode
-                                            + ", Name=" + f.Name + ", Size=" + f.FileSize);
+                                        ADSK.File file = VaultUtil.FindFileWithDownloadExtension(serviceManager, 
+                                            documentService, 
+                                            baseRepositories, 
+                                            fcode, 
+                                            f, 
+                                            validExts[i, 0], 
+                                            validExts[i, 1]);
+                                        if (file != null)
+                                        {
+                                            fileList.Add(file);
+                                        }
                                     }
                                 }
                             }
@@ -90,7 +111,7 @@ namespace VaultTools.vault.util
                     }
                 }
             }
-            NeodentUtil.util.LOG.debug("@@@@@@ FindAllInCheckin - 4 - result=" + fileList.Count);
+            LOG.debug("@@@@@@ FindAllInCheckin.Find - 6 - result=" + fileList.Count);
             return fileList;
         }
     }
