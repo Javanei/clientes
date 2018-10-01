@@ -236,13 +236,13 @@ namespace vaultsap
                         }
                         else if (convertall)
                         {
-                            manager.Convert(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                            manager.ConvertAllInCheckin(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                         }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.Convert(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                                manager.ConvertAllInCheckin(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
                             }
                             else
                             {
@@ -282,6 +282,7 @@ namespace vaultsap
                 catch (Exception eManager)
                 {
                     LOG.error("Não conseguiu conectar o Vault: " + eManager.Message);
+                    LOG.error(eManager.StackTrace);
                 }
             }
         }

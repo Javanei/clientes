@@ -68,32 +68,21 @@ namespace VaultTools.vault
             bool preservetemp,
             bool ignorecheckout)
         {
-            LOG.info("Manager.Convert(preservetemp=" + preservetemp + ")");
+            LOG.info("Manager.Convert(preservetemp=" + preservetemp + ", ignorecheckout=" + ignorecheckout + ")");
 
-            // Reprocessa os desenhos anteriores
-            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
-
-            // Le o arquivo de configuração
             Dictionary<string, string> config = DictionaryUtil.ReadPropertyFile(confFile);
-            DictionaryUtil.SetProperty(config, "ultimaExecucao", DateTime.Now.ToUniversalTime().ToString("yyyy/MM/dd HH:mm:ss"));
             string checkInDate = DictionaryUtil.GetProperty(config, "LastCheckInDate");
-            LOG.debug("@@@@@@ Manager.Convert - 2 - checkInDate=" + checkInDate);
 
-            List<ADSK.File> files;
             if (checkInDate == null || checkInDate == "")
             {
-                files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExts, ignorecheckout);
+                LOG.debug("@@@@@@ Manager.Convert - 2 - Convertendo tudo");
+                ConvertAllInCheckin(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
             }
             else
             {
-                files = util.FindByCheckinDate.Find(serviceManager, baseRepositories, validExts, checkInDate, ignorecheckout);
+                LOG.debug("@@@@@@ Manager.Convert - 3 - Convertendo por data de checkin: " + checkInDate);
+                ConvertByCheckinDate(checkInDate, validExts, sheetPrefix, storagefolder, preservetemp, ignorecheckout);
             }
-            LOG.debug("@@@@@@ Manager.Convert - 3 - desenhos encontrados=" + files.Count);
-
-            Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
-
-            // Reprocessa os desenhos que deram erro
-            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
 
             LOG.debug("@@@@@@ Manager.Convert - 4 - FIM");
         }
@@ -119,14 +108,21 @@ namespace VaultTools.vault
         }
 
         public void ConvertAllInCheckin(string[,] validExts, string[] sheetPrefixes, string storagefolder,
-            bool preservetemp)
+            bool preservetemp, bool ignorecheckout)
         {
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 1");
+
+            // Reprocessa os desenhos anteriores
+            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
+
             ADSK.DocumentService documentService = serviceManager.DocumentService;
             List<ADSK.File> files = util.FindAllInCheckin.Find(serviceManager, baseRepositories, validExts, false);
 
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 2 - desenhos encontrados=" + files.Count);
             Convert(files, validExts, sheetPrefixes, storagefolder, preservetemp);
+
+            // Reprocessa os desenhos que deram erro
+            ProcessErrorsFromPreviousConvertion(validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
 
             LOG.debug("@@@@@@ Manager.ConvertAllInCheckin - 3 - FIM");
         }
