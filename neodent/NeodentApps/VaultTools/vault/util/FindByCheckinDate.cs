@@ -91,6 +91,7 @@ namespace VaultTools.vault.util
                     {
                         foreach (ADSK.File f in files)
                         {
+                            LOG.debug("@@@@@@ FindByCheckinDate.Find - 3 - Vai procurar versao de download do arquivo: " + f.Name + ", checkin=" + f.CkInDate);
                             fileListTmp.Add(f);
                             for (int i = 0; i < validExts.Length / 2; i++)
                             {
@@ -112,7 +113,7 @@ namespace VaultTools.vault.util
                     }
                 }
             }
-            LOG.debug("@@@@@@ FindByCheckinDate.Find - 3 - result=" + fileList.Count);
+            LOG.debug("@@@@@@ FindByCheckinDate.Find - 4 - result=" + fileList.Count);
             return fileList;
         }
     }

@@ -85,17 +85,24 @@ namespace GSTools.converter
 
         public bool MergePDFs(string destPdfFile, List<string> images)
         {
+            LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 1 - (destPdfFile=" + destPdfFile + ", images=" + images.Count + ")");
             if (images.Count > 0 && File.Exists(destPdfFile))
             {
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 2 - Ja existia, deletando versao anterior");
                 File.SetAttributes(destPdfFile, FileAttributes.Normal);
                 File.Delete(destPdfFile);
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 3 - Conseguiu deletar? =" + (!File.Exists(destPdfFile)));
             }
 
-            LOG.debug("@@@@@@@@ MergePDFs - 1 - (destPdfFile=" + destPdfFile + ")");
             if (images.Count == 1)
             {
-                LOG.debug("@@@@@@@@ MergePDFs - 2 - Só um arquivo, apenas copia");
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 4 - So um arquivo, apenas copia");
                 File.Copy(images[0], destPdfFile);
+                if (!File.Exists(destPdfFile))
+                {
+                    throw new System.Exception("Nao conseguiu criar o arquivo destino: " + destPdfFile);
+                }
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 5 - Copia efetuada");
                 return true;
             }
             else if (images.Count > 1)
@@ -106,8 +113,8 @@ namespace GSTools.converter
                     args = args + " \"" + img + "\"";
                 }
 
-                LOG.debug("@@@@@@@@ MergePDFs - 3 - executablePath=" + executablePath);
-                LOG.debug("@@@@@@@@ MergePDFs - 4 - args=" + args);
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 6 - executablePath=" + executablePath);
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 7 - args=" + args);
 
                 System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
                 {
@@ -118,7 +125,7 @@ namespace GSTools.converter
                     StartInfo = startInfo
                 };
 
-                LOG.debug("@@@@@@@@ MergePDFs - 5 - Vai executar");
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 8 - Vai executar");
                 process.Start();
                 if (!process.WaitForExit(30000))
                 {
@@ -126,11 +133,15 @@ namespace GSTools.converter
                     throw new System.Exception("Timeout fazendo merge para o PDF: " + destPdfFile);
                 }
                 int exitCode = process.ExitCode;
-                LOG.debug("@@@@@@@@ MergePDFs - 6 - Executou - exitCode=" + exitCode);
+                LOG.debug("@@@@@@@@@@@@@@ MergePDFs - 9 - Executou - exitCode=" + exitCode);
                 process.Dispose();
                 if (exitCode > 0)
                 {
                     throw new System.Exception("Erro fazendo merge para o PDF " + destPdfFile + ", exitCode=" + exitCode);
+                }
+                if (!File.Exists(destPdfFile))
+                {
+                    throw new System.Exception("Nao conseguiu criar o arquivo destino: " + destPdfFile);
                 }
                 return true;
             }
