@@ -36,6 +36,7 @@ namespace vaultsap
         private static bool listcheckedout = false;
         private static bool showinfo = false;
         private static bool help = false;
+        private static bool stats = false;
 
         // Lista de desenhos a serem processandos
         private static List<string> toConvert = new List<string>();
@@ -198,6 +199,7 @@ namespace vaultsap
                 Console.WriteLine("      -listall: Lista todos os desenhos em checkin");
                 Console.WriteLine("      -list: Lista os desenhos em checkin usando a data de checkin salva no arquivo vaultsap.conf. Se não tiver uma data, lista todos");
                 Console.WriteLine("      -listcheckedout: Lista todos os desenhos em checkout");
+                Console.WriteLine("      -stats: Mostra estatísticas sobre os desenhos");
                 Console.WriteLine("      -showinfo: Mostra informações detalhadas referentes aos desenhos especificados");
                 Console.WriteLine("      -help: Mostra essa tela de ajuda");
                 Console.WriteLine("    [desenho1] [desenho2] [desenho...]: Converte os desenhos informados");
@@ -239,11 +241,15 @@ namespace vaultsap
                         {
                             manager.ConvertAllInCheckin(preservetemp, ignorecheckout);
                         }
+                        else if (stats)
+                        {
+                            manager.Stats();
+                        }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.ConvertAllInCheckin(preservetemp, ignorecheckout);
+                                manager.Convert(preservetemp, ignorecheckout);
                             }
                             else
                             {
@@ -406,6 +412,11 @@ namespace vaultsap
                     else if (arg.Equals("-list"))
                     {
                         list = true;
+                        help = help || false;
+                    }
+                    else if (arg.Equals("-stats"))
+                    {
+                        stats = true;
                         help = help || false;
                     }
                     else if (arg.Equals("-help"))

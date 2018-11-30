@@ -199,6 +199,76 @@ namespace VaultTools.vault
             }
         }
 
+        public void Stats()
+        {
+            LOG.info("Manager.Stats()");
+
+            int checkedIn = 0;
+            int checkedOut = 0;
+            int totalCheckedIn = 0;
+            int totalCheckedOut = 0;
+            int total = 0;
+
+            Console.WriteLine("");
+            Console.WriteLine("Estatisticas:");
+
+            foreach (string repo in baseRepositories)
+            {
+                Console.WriteLine(" - Repositorio: " + repo);
+                string[] repos = new string[1];
+                repos[0] = repo;
+
+                // Conta arquivos em check-in
+                List<ADSK.File> filesIn = util.FindAllInCheckin.Find(serviceManager, repos, validExts, true);
+                checkedIn = filesIn.Count;
+                totalCheckedIn += checkedIn;
+                Console.WriteLine(" - - Em CheckIn.: " + checkedIn);
+                for (int i = 0; i < validExts.Length / 2; i++)
+                {
+                    string ext = validExts[i, 1];
+                    int cont = 0;
+                    foreach (ADSK.File file in filesIn)
+                    {
+                        if (file.Name.EndsWith(ext))
+                        {
+                            cont++;
+                        }
+                    }
+                    Console.WriteLine(" - - - " + ext + ": " + cont);
+                }
+
+                // Conta arquivos em check-out
+                List<ADSK.File> filesOut = util.FindByCheckedOut.Find(serviceManager, repos, validExts);
+                checkedOut = filesOut.Count;
+                totalCheckedOut += checkedOut;
+                Console.WriteLine(" - - Em CheckOut: " + checkedOut);
+                for (int i = 0; i < validExts.Length / 2; i++)
+                {
+                    string ext = validExts[i, 1];
+                    int cont = 0;
+                    foreach (ADSK.File file in filesOut)
+                    {
+                        if (file.Name.EndsWith(ext))
+                        {
+                            cont++;
+                        }
+                    }
+                    Console.WriteLine(" - - - " + ext + ": " + cont);
+                }
+
+                total = checkedIn + checkedOut;
+                Console.WriteLine(" - - Total......: " + total);
+
+                Console.WriteLine("");
+            }
+
+            Console.WriteLine(" = TOTAL");
+            Console.WriteLine(" = = Em CheckIn.: " + totalCheckedIn);
+            Console.WriteLine(" = = Em CheckOut: " + totalCheckedOut);
+            total = totalCheckedIn + totalCheckedOut;
+            Console.WriteLine(" = = Total......: " + total);
+        }
+
         public void List(bool ignorecheckout)
         {
             LOG.info("Manager.List()");
