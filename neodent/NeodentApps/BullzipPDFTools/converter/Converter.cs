@@ -15,27 +15,8 @@ namespace BullzipPDFTools.converter
         {
         }
 
-        public List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes)
+        private PdfSettings CreatePdfSettings()
         {
-            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
-            List<string> imgToConvert = new List<string>();
-
-            Dictionary<string, string> fileProps = new Dictionary<string, string>();
-            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps, sheetPrefixes);
-            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 2 - fileProps: " + fileProps.Count);
-            if (fileProps.Count <= 2)
-            {
-                LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 3 - Não ha nenhum desenho a ser impresso");
-                return imgToConvert;
-            }
-            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 4 - imagens a serem impressas: " + (fileProps.Count - 2));
-            int.TryParse(DictionaryUtil.GetProperty(fileProps, "-1"), out int totalPages);
-            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 5 - total de imagens no desenho: " + totalPages);
-            bool singleFile = totalPages == (fileProps.Count - 2);
-            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 6 - Imprimir em arquivo unico?: " + singleFile);
-            string codigoDesenho = Directory.GetParent(dwfFile).Name;
-            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 7 - Codigo do desenho: " + codigoDesenho);
-
             PdfSettings settings = new PdfSettings();
             settings.LoadSettings(settings.GetSettingsFilePath(false));
             settings.SetValue(BullzipPDFOptions.ConfirmOverwrite.ToString(), "no");
@@ -60,6 +41,31 @@ namespace BullzipPDFTools.converter
             settings.SetValue(BullzipPDFOptions.AppendIfExists.ToString(), "no");
             settings.SetValue(BullzipPDFOptions.EmbedAllFonts.ToString(), "yes");
             settings.SetValue(BullzipPDFOptions.DeleteOutput.ToString(), "no");
+            return settings;
+        }
+
+        public List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes)
+        {
+            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
+            List<string> imgToConvert = new List<string>();
+
+            Dictionary<string, string> fileProps = new Dictionary<string, string>();
+            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps, sheetPrefixes);
+            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 2 - fileProps: " + fileProps.Count);
+            if (fileProps.Count <= 2)
+            {
+                LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 3 - Não ha nenhum desenho a ser impresso");
+                return imgToConvert;
+            }
+            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 4 - imagens a serem impressas: " + (fileProps.Count - 2));
+            int.TryParse(DictionaryUtil.GetProperty(fileProps, "-1"), out int totalPages);
+            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 5 - total de imagens no desenho: " + totalPages);
+            bool singleFile = totalPages == (fileProps.Count - 2);
+            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 6 - Imprimir em arquivo unico?: " + singleFile);
+            string codigoDesenho = Directory.GetParent(dwfFile).Name;
+            LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 7 - Codigo do desenho: " + codigoDesenho);
+
+            PdfSettings settings = CreatePdfSettings();
 
             string logFile = imgTempfolder + "\\" + codigoDesenho + ".log";
             string outPdf = imgTempfolder + "\\" + codigoDesenho + ".pdf";

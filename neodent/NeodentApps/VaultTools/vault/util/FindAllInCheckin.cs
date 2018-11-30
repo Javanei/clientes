@@ -16,9 +16,8 @@ namespace VaultTools.vault.util
             string[,] validExts,
             bool ignorecheckout)
         {
-            LOG.debug("@@@@@@ FindAllInCheckin.Find - 1");
+            LOG.debug("@@@@@@ FindAllInCheckin.Find - 1 - (ignorecheckout=" + ignorecheckout + ")");
             ADSK.DocumentService documentService = serviceManager.DocumentService;
-            LOG.debug("@@@@@@ FindAllInCheckin.Find - 2");
 
             List<ADSK.File> fileList = new List<ADSK.File>();
             List<ADSK.File> fileListTmp = new List<ADSK.File>();
@@ -41,10 +40,10 @@ namespace VaultTools.vault.util
                     SortAsc = true,
                     PropDefId = (int)propCheckInDate.Id
                 };
-                LOG.debug("@@@@@@ FindAllInCheckin.Find - 3");
+                LOG.debug("@@@@@@ FindAllInCheckin.Find - 2");
 
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[(validExts.Length / 2) + (ignorecheckout ? 0 : 1)];
-                //Condição para filtrar apenas os que não estiverem em checkout
+                ADSK.SrchCond[] conditions = new ADSK.SrchCond[(validExts.Length / 2) + (ignorecheckout ? 1 : 0)];
+                LOG.debug("@@@@@@ FindAllInCheckin.Find - 3 - conditions=" + conditions.Length);
                 for (int i = 0; i < validExts.Length / 2; i++)
                 {
                     conditions[i] = new ADSK.SrchCond
@@ -56,6 +55,7 @@ namespace VaultTools.vault.util
                         SrchRule = ADSK.SearchRuleType.May
                     };
                 }
+                //Condição para filtrar apenas os que não estiverem em checkout
                 if (ignorecheckout)
                 {
                     conditions[conditions.Length - 1] = new ADSK.SrchCond
@@ -84,6 +84,7 @@ namespace VaultTools.vault.util
                     {
                         foreach (ADSK.File f in files)
                         {
+                            LOG.debug("@@@@@@ FindAllInCheckin.Find - 6 - Vai procurar versao de download do arquivo: " + f.Name + ", checkin=" + f.CkInDate);
                             fileListTmp.Add(f);
                             for (int i = 0; i < validExts.Length / 2; i++)
                             {
@@ -93,12 +94,12 @@ namespace VaultTools.vault.util
                                     if (!allf.Contains(fcode))
                                     {
                                         allf.Add(fcode);
-                                        ADSK.File file = VaultUtil.FindFileWithDownloadExtension(serviceManager, 
-                                            documentService, 
-                                            baseRepositories, 
-                                            fcode, 
-                                            f, 
-                                            validExts[i, 0], 
+                                        ADSK.File file = VaultUtil.FindFileWithDownloadExtension(serviceManager,
+                                            documentService,
+                                            baseRepositories,
+                                            fcode,
+                                            f,
+                                            validExts[i, 0],
                                             validExts[i, 1]);
                                         if (file != null)
                                         {
@@ -111,7 +112,7 @@ namespace VaultTools.vault.util
                     }
                 }
             }
-            LOG.debug("@@@@@@ FindAllInCheckin.Find - 6 - result=" + fileList.Count);
+            LOG.debug("@@@@@@ FindAllInCheckin.Find - 7 - result=" + fileList.Count);
             return fileList;
         }
     }

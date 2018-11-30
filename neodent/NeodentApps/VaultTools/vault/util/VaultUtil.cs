@@ -77,7 +77,8 @@ namespace VaultTools.vault.util
             List<ADSK.File> fTmp = FindByFileNameEquals.FindByNameEquals(serviceManager, documentService, baseRepositories, filename + destExt);
             if (fTmp.Count > 0)
             {
-                LOG.debug("@@@@@@@@@@@@ VaultUtil.FindFileWithDownloadExtension - 2 - Achou: " + fTmp[0].Name);
+                LOG.debug("@@@@@@@@@@@@ VaultUtil.FindFileWithDownloadExtension - 2 - Achou: "
+                    + fTmp[0].Name + ", checkin=" + f.CkInDate);
                 return fTmp[0];
             }
             else

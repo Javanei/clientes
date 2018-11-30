@@ -36,14 +36,15 @@ namespace vaultsap
         private static bool listcheckedout = false;
         private static bool showinfo = false;
         private static bool help = false;
+        private static bool stats = false;
 
         // Lista de desenhos a serem processandos
         private static List<string> toConvert = new List<string>();
         private static List<string> filesToConvert = new List<string>();
 
-        private static readonly string[,] validExts = new string[,] { 
-            { ".idw", ".idw.dwf" }, 
-            { ".dwg", ".dwg.dwf" }, 
+        private static readonly string[,] validExts = new string[,] {
+            { ".idw", ".idw.dwf" },
+            { ".dwg", ".dwg.dwf" },
             { ".pdf", ".pdf" }
         };
         private static readonly string confFile = "vaultsap.conf";
@@ -104,7 +105,8 @@ namespace vaultsap
                 else if (dwfconverterpath.ToLower().Contains("cadconverterx64.exe"))
                 {
                     dwfconverter = new TotalCadTools.converter.Converter(dwfconverterpath, pdfconverterpath);
-                } else if (dwfconverterpath.ToLower().Contains("bullzip"))
+                }
+                else if (dwfconverterpath.ToLower().Contains("bullzip"))
                 {
                     dwfconverter = new BullzipPDFTools.converter.Converter();
                 }
@@ -197,6 +199,7 @@ namespace vaultsap
                 Console.WriteLine("      -listall: Lista todos os desenhos em checkin");
                 Console.WriteLine("      -list: Lista os desenhos em checkin usando a data de checkin salva no arquivo vaultsap.conf. Se não tiver uma data, lista todos");
                 Console.WriteLine("      -listcheckedout: Lista todos os desenhos em checkout");
+                Console.WriteLine("      -stats: Mostra estatísticas sobre os desenhos");
                 Console.WriteLine("      -showinfo: Mostra informações detalhadas referentes aos desenhos especificados");
                 Console.WriteLine("      -help: Mostra essa tela de ajuda");
                 Console.WriteLine("    [desenho1] [desenho2] [desenho...]: Converte os desenhos informados");
@@ -207,8 +210,8 @@ namespace vaultsap
                 try
                 {
                     VaultTools.vault.Manager manager = filesToConvert.Count == 0
-                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, sheetPrefixes, vaultserver, vaultuser, vaultpass, tempfolder)
-                        : new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, baseRepositories, sheetPrefixes, tempfolder);
+                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, validExts, sheetPrefixes, vaultserver, vaultuser, vaultpass, storagefolder, tempfolder)
+                        : new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, baseRepositories, validExts, sheetPrefixes, storagefolder, tempfolder);
                     try
                     {
                         if (filesToConvert.Count > 0)
@@ -217,7 +220,7 @@ namespace vaultsap
                             {
                                 string dir = Directory.GetParent(f).FullName;
                                 string file = Path.GetFileName(f);
-                                manager.ConvertAlreadyDownloadedFile(dir, file, validExts, sheetPrefixes, storagefolder, preservetemp);
+                                manager.ConvertAlreadyDownloadedFile(dir, file, preservetemp);
                             }
                         }
                         else if (toConvert.Count > 0)
@@ -230,23 +233,27 @@ namespace vaultsap
                                 }
                                 else
                                 {
-                                    manager.ConvertByFilename(desenho, validExts, sheetPrefixes, storagefolder, ignorecheckout, preservetemp);
+                                    manager.ConvertByFilename(desenho, ignorecheckout, preservetemp);
                                 }
                             }
                         }
                         else if (convertall)
                         {
-                            manager.Convert(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                            manager.ConvertAllInCheckin(preservetemp, ignorecheckout);
+                        }
+                        else if (stats)
+                        {
+                            manager.Stats();
                         }
                         else if (convert)
                         {
                             if (checkindate == null || checkindate == "")
                             {
-                                manager.Convert(validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                                manager.Convert(preservetemp, ignorecheckout);
                             }
                             else
                             {
-                                manager.ConvertByCheckinDate(checkindate, validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                                manager.ConvertByCheckinDate(checkindate, preservetemp, ignorecheckout);
                             }
                         }
                         else if (listpropertydef)
@@ -255,23 +262,23 @@ namespace vaultsap
                         }
                         else if (list)
                         {
-                            manager.List(validExts, ignorecheckout);
+                            manager.List(ignorecheckout);
                         }
                         else if (listbycheckindate)
                         {
-                            manager.ListByCheckinDate(checkindate, validExts, ignorecheckout);
+                            manager.ListByCheckinDate(checkindate, ignorecheckout);
                         }
                         else if (listcheckedout)
                         {
-                            manager.ListAllCheckedOut(validExts);
+                            manager.ListAllCheckedOut();
                         }
                         else if (listall)
                         {
-                            manager.ListtAllInCheckin(validExts, ignorecheckout);
+                            manager.ListtAllInCheckin(ignorecheckout);
                         }
                         else if (checkindate != null)
                         {
-                            manager.ConvertByCheckinDate(checkindate, validExts, sheetPrefixes, storagefolder, preservetemp, ignorecheckout);
+                            manager.ConvertByCheckinDate(checkindate, preservetemp, ignorecheckout);
                         }
                     }
                     finally
@@ -282,6 +289,7 @@ namespace vaultsap
                 catch (Exception eManager)
                 {
                     LOG.error("Não conseguiu conectar o Vault: " + eManager.Message);
+                    LOG.error(eManager.StackTrace);
                 }
             }
         }
@@ -404,6 +412,11 @@ namespace vaultsap
                     else if (arg.Equals("-list"))
                     {
                         list = true;
+                        help = help || false;
+                    }
+                    else if (arg.Equals("-stats"))
+                    {
+                        stats = true;
                         help = help || false;
                     }
                     else if (arg.Equals("-help"))
