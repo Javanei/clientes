@@ -5,11 +5,12 @@ using System.Collections.Generic;
 using Bullzip.PdfWriter;
 
 using DWFCore.dwf;
+using PDFCore.pdf;
 using NeodentUtil.util;
 
 namespace BullzipPDFTools.converter
 {
-    public class Converter : IDWFConverter
+    public class Converter : IDWFConverter, IPDFConverter
     {
         public Converter()
         {
@@ -161,6 +162,67 @@ namespace BullzipPDFTools.converter
                 }
             }
             LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 16 - FIM: " + imgToConvert.Count);
+            return imgToConvert;
+        }
+
+        public List<string> PdfToPDF(string srcPdfFile, string imgTempfolder)
+        {
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 1 - (srcPdfFile=" + srcPdfFile + ")");
+            List<string> imgToConvert = new List<string>();
+
+            string codigoDesenho = Directory.GetParent(srcPdfFile).Name;
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 2 - Codigo do desenho: " + codigoDesenho);
+
+            PdfSettings settings = CreatePdfSettings();
+
+            string logFile = imgTempfolder + "\\" + codigoDesenho + ".log";
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 3 - Arquivo de log: " + logFile);
+            string outPdf = imgTempfolder + "\\" + codigoDesenho + "-out.pdf";
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 4 - outPdf: " + outPdf);
+            settings.SetValue(BullzipPDFOptions.StatusFile.ToString(), logFile);
+            settings.SetValue(BullzipPDFOptions.Output.ToString(), outPdf);
+
+            settings.WriteSettings(settings.GetSettingsFilePath(false));
+
+            string printerName = settings.PrinterName;
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 5 - printerName: " + printerName);
+
+            try
+            {
+                ProcessUtil.PrintFile(srcPdfFile, printerName, 5000);
+            }
+            catch (Exception ex)
+            {
+                // Encerra tambem o processo de envio de dump pra Autodesk
+                ProcessUtil.KillByImageName("senddmp.exe");
+                throw ex;
+            }
+            ProcessUtil.KillByImageName("AcroRd32.exe");
+
+            // Aguarda a criacao do arquivo de LOG
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 6 - Aguardando a geracao do arquivo de log: " + logFile);
+            bool result = PdfUtil.WaitForFile(logFile, 60000);
+            if (!result)
+            {
+                throw new System.Exception("Nao conseguiu gerar os PDFs no tempo esperado");
+            }
+
+            if (!File.Exists(outPdf))
+            {
+                LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 7 - Nao gerou o arquivo: " + outPdf);
+                throw new System.Exception("A impressao do desenho falhou");
+            }
+
+            PdfStatus pdfStatus = new PdfStatus(logFile);
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 8 - Arquivos PDF gerados: " + pdfStatus.FileCount);
+            if (pdfStatus.FileCount == 0)
+            {
+                throw new System.Exception("Nao gerou nenhum PDF");
+            }
+
+            imgToConvert.Add(pdfStatus.Files[0]);
+
+            LOG.debug("@@@@@@@@ BullzipPDFTools.PdfToPDF - 9 - FIM: " + imgToConvert.Count);
             return imgToConvert;
         }
     }

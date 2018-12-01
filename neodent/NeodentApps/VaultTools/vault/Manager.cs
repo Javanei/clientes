@@ -3,6 +3,7 @@ using System;
 using System.IO;
 
 using DWFCore.dwf;
+using PDFCore.pdf;
 using NeodentUtil.util;
 
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
@@ -15,6 +16,7 @@ namespace VaultTools.vault
         private static readonly string ErrorList = "vaultsap.err.conf";
 
         private IDWFConverter dwfconverter;
+        private IPDFConverter pdfconverter;
         private string pdfconverterexecutable;
         private string[] baseRepositories;
         private string[,] validExts;
@@ -30,6 +32,7 @@ namespace VaultTools.vault
         private ADSKTools.WebServiceManager serviceManager = null;
 
         public Manager(IDWFConverter dwfconverter,
+            IPDFConverter pdfconverter,
             string pdfconverterexecutable,
             string[] baseRepositories,
             string[,] validExts,
@@ -38,6 +41,7 @@ namespace VaultTools.vault
             string tempfolder)
         {
             this.dwfconverter = dwfconverter;
+            this.pdfconverter = pdfconverter;
             this.pdfconverterexecutable = pdfconverterexecutable;
             this.baseRepositories = baseRepositories;
             this.validExts = validExts;
@@ -47,6 +51,7 @@ namespace VaultTools.vault
         }
 
         public Manager(IDWFConverter dwfconverter,
+            IPDFConverter pdfconverter,
             string pdfconverterexecutable,
             string server,
             string[] baseRepositories,
@@ -59,6 +64,7 @@ namespace VaultTools.vault
             string tempfolder)
         {
             this.dwfconverter = dwfconverter;
+            this.pdfconverter = pdfconverter;
             this.pdfconverterexecutable = pdfconverterexecutable;
             this.server = server;
             this.baseRepositories = baseRepositories;
@@ -504,10 +510,7 @@ namespace VaultTools.vault
             else if (file.EndsWith(".pdf"))
             {
                 // Apenas copia para a pasta final
-                images = new List<string>
-                {
-                    file
-                };
+                images = pdfconverter.PdfToPDF(file, imgTempfolder);
                 LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 4 - imagens (PDF) para mergear: " + images.Count);
             }
 

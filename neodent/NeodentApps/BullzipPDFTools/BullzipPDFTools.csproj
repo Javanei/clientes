@@ -60,6 +60,10 @@
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>
     </ProjectReference>
+    <ProjectReference Include="..\PDFCore\PDFCore.csproj">
+      <Project>{eba95a2c-6ddb-4cc1-a689-789f3d05ce09}</Project>
+      <Name>PDFCore</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
