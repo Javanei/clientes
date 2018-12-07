@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using NeodentUtil.util;
 using DWFCore.dwf;
+using PDFCore.pdf;
 
 namespace vaultsap
 {
@@ -12,6 +13,7 @@ namespace vaultsap
         private static readonly string[] sheetPrefixes = new string[] { "op_", "ps_" };
 
         private static IDWFConverter dwfconverter = null;
+        private static IPDFConverter pdfconverter = null;
 
         // Configuração
         private static string vaultuser = "integracao";
@@ -20,7 +22,7 @@ namespace vaultsap
         private static string vaultserver = "neodent";
         private static string storagefolder = "c:\\temp\\storage";
         private static string tempfolder = "c:\\temp";
-        private static string dwfconverterpath;
+        //private static string dwfconverterpath;
         private static string pdfconverterpath;
         private static string checkindate;
         private static bool ignorecheckout = false;
@@ -83,11 +85,6 @@ namespace vaultsap
             {
                 tempfolder = value;
             }
-            value = DictionaryUtil.GetProperty(config, "dwfconverterpath");
-            if (value != null)
-            {
-                dwfconverterpath = value;
-            }
             value = DictionaryUtil.GetProperty(config, "pdfconverterpath");
             if (value != null)
             {
@@ -96,25 +93,9 @@ namespace vaultsap
 
             ParseParams(config, args);
 
-            if (dwfconverter == null && dwfconverterpath != null)
-            {
-                if (dwfconverterpath.ToLower().Contains("dp.exe"))
-                {
-                    dwfconverter = new AnyDwgToPdfTools.converter.Converter(dwfconverterpath);
-                }
-                else if (dwfconverterpath.ToLower().Contains("cadconverterx64.exe"))
-                {
-                    dwfconverter = new TotalCadTools.converter.Converter(dwfconverterpath, pdfconverterpath);
-                }
-                else if (dwfconverterpath.ToLower().Contains("bullzip"))
-                {
-                    dwfconverter = new BullzipPDFTools.converter.Converter();
-                }
-                else
-                {
-                    dwfconverter = new ACMECadTools.converter.Converter(dwfconverterpath);
-                }
-            }
+            BullzipPDFTools.converter.Converter conv = new BullzipPDFTools.converter.Converter();
+            dwfconverter = conv;
+            pdfconverter = conv;
 
             DictionaryUtil.WritePropertyFile(confFile, config);
 
@@ -126,7 +107,6 @@ namespace vaultsap
             LOG.debug("--- vaultpass.......=" + vaultpass);
             LOG.debug("--- tempfolder......=" + tempfolder);
             LOG.debug("--- storagefolder...=" + storagefolder);
-            LOG.debug("--- dwfconverterpath=" + dwfconverterpath);
             LOG.debug("--- pdfconverterpath=" + pdfconverterpath);
 
             /*
@@ -185,7 +165,6 @@ namespace vaultsap
                 Console.WriteLine("      -vaultserver=<nome>: Nome do servidor no Vault. Default: neodent");
                 Console.WriteLine("      -storagefolder=<caminho>: Caminho da pasta onde os desenhos convertidos serão salvos");
                 Console.WriteLine("      -tempfolder=<caminho>: Caminho da pasta temporária que será usada durante a conversão");
-                Console.WriteLine("      -dwfconverterpath=<caminho>: Caminho do executável que converte os arquivos DWF para PDF/JPG");
                 Console.WriteLine("      -pdfconverterpath=<caminho>: Caminho do executável que manipula PDF (Ghostscript)");
                 Console.WriteLine("      -checkindate=<yyyy/MM/dd HH:mm:ss>: Uma data de checkin inicial para operações que a utilizarem");
                 Console.WriteLine("      -sourcefile=<filepath>: Converte o arquivo especificado que já está em alguma pasta no disco");
@@ -210,8 +189,8 @@ namespace vaultsap
                 try
                 {
                     VaultTools.vault.Manager manager = filesToConvert.Count == 0
-                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, validExts, sheetPrefixes, vaultserver, vaultuser, vaultpass, storagefolder, tempfolder)
-                        : new VaultTools.vault.Manager(dwfconverter, pdfconverterpath, baseRepositories, validExts, sheetPrefixes, storagefolder, tempfolder);
+                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, validExts, sheetPrefixes, vaultserver, vaultuser, vaultpass, storagefolder, tempfolder)
+                        : new VaultTools.vault.Manager(dwfconverter, pdfconverter, pdfconverterpath, baseRepositories, validExts, sheetPrefixes, storagefolder, tempfolder);
                     try
                     {
                         if (filesToConvert.Count > 0)
@@ -330,11 +309,6 @@ namespace vaultsap
                     {
                         storagefolder = s.Substring(s.IndexOf('=') + 1);
                         DictionaryUtil.SetProperty(config, "storagefolder", storagefolder);
-                    }
-                    else if (arg.StartsWith("-dwfconverterpath"))
-                    {
-                        dwfconverterpath = s.Substring(s.IndexOf('=') + 1);
-                        DictionaryUtil.SetProperty(config, "dwfconverterpath", dwfconverterpath);
                     }
                     else if (arg.StartsWith("-pdfconverterpath"))
                     {

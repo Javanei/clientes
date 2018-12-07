@@ -105,8 +105,12 @@ namespace NeodentUtil.util
             }
             if (!result)
             {
-                Kill(process);
-                throw new Exception("A impressao do arquivo \"" + file + "\" na impressora \"" + printerName + "\" nao terminou no tempo de " + timeoutInMS + "ms. Encerrando processo");
+                //TODO: Esse IF e' muito xumbrega e perigoso.
+                if (!process.ProcessName.Equals("AcroRd32"))
+                {
+                    Kill(process);
+                    throw new Exception("A impressao do arquivo \"" + file + "\" na impressora \"" + printerName + "\" nao terminou no tempo de " + timeoutInMS + "ms. Encerrando processo");
+                }
             }
             LOG.debug("@@@@@@@@@@ ProcessUtil.PrintFile - 3 - Finalizado impressao do arquivo \"" + file + "\"");
         }

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("ACMECadTools")]
+[assembly: AssemblyTitle("PDFCore")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ACMECadTools")]
+[assembly: AssemblyProduct("PDFCore")]
 [assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("452ebd77-6b95-4736-a9b3-4388eaf24952")]
+[assembly: Guid("eba95a2c-6ddb-4cc1-a689-789f3d05ce09")]
 
 // Version information for an assembly consists of the following four values:
 //
