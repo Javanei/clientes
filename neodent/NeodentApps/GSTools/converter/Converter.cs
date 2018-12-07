@@ -153,7 +153,6 @@ namespace GSTools.converter
             LOG.debug("@@@@@@@@ PDFToJPG - 1 - (pdfFile=" + pdfFile + ")");
             List<string> files = new List<string>();
 
-            //     -f 114.419.pdf
             string args = "-dNOPAUSE"
                 + " -dBATCH"
                 + " -sDEVICE=jpeg"
@@ -198,6 +197,52 @@ namespace GSTools.converter
             }
             LOG.debug("@@@@@@@@ DwfToJPG - 8 - arquivos: " + files.Count);
             files.Sort();
+
+            return files;
+        }
+
+
+        public List<string> PDFToPDF(string pdfFile, string imgTempfolder)
+        {
+            LOG.debug("@@@@@@@@ PDFToPDF - 1 - (pdfFile=" + pdfFile + ")");
+            List<string> files = new List<string>();
+
+            string destPdfFile = imgTempfolder + "\\"
+                + Path.GetFileNameWithoutExtension(pdfFile) + "-out.pdf";
+            LOG.debug("@@@@@@@@ PDFToPDF - 2 - destPdfFile=" + destPdfFile);
+
+            string args = "-dNOPAUSE"
+                + " -dBATCH"
+                + " -dQUIET"
+                + " -sDEVICE=pdfwrite"
+                + " -sOUTPUTFILE=\"" + destPdfFile + "\""
+                + " -f \"" + pdfFile + "\"";
+
+            LOG.debug("@@@@@@@@ PDFToPDF - 3 - executablePath=" + executablePath);
+            LOG.debug("@@@@@@@@ PDFToPDF - 4 - args=" + args);
+
+            System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo(executablePath, args)
+            {
+                ErrorDialog = false
+            };
+            System.Diagnostics.Process process = new System.Diagnostics.Process
+            {
+                StartInfo = startInfo
+            };
+
+            LOG.debug("@@@@@@@@ PDFToPDF - 5 - Vai executar");
+            process.Start();
+            if (!process.WaitForExit(30000))
+            {
+                process.Kill();
+                throw new System.Exception("Timeout convertendo para PDF o arquivo: " + pdfFile);
+            }
+            LOG.debug("@@@@@@@@ PDFToPDF - 6 - exitCode=" + process.ExitCode);
+
+            LOG.debug("@@@@@@@@ PDFToPDF - 7 - Executou");
+            process.Dispose();
+
+            files.Add(destPdfFile);
 
             return files;
         }

@@ -509,8 +509,17 @@ namespace VaultTools.vault
             }
             else if (file.EndsWith(".pdf"))
             {
+                // Simula uma impressao para contornar um problema nos arquivos salvos no Vault
+                /*
+                GSTools.converter.Converter merger = new GSTools.converter.Converter(pdfconverterexecutable);
+                images = merger.PDFToPDF(file, imgTempfolder);
+                */
+
                 // Apenas copia para a pasta final
-                images = pdfconverter.PdfToPDF(file, imgTempfolder);
+                images = new List<string>
+                {
+                    file
+                };
                 LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 4 - imagens (PDF) para mergear: " + images.Count);
             }
 
