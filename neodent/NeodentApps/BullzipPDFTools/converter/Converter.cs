@@ -92,7 +92,10 @@ namespace BullzipPDFTools.converter
             {
                 // Encerra também o processo de envio de dump pra Autodesk
                 ProcessUtil.KillByImageName("senddmp.exe");
-                throw ex;
+                if (!ex.Message.Contains("nao terminou no tempo de"))
+                {
+                    throw ex;
+                }
             }
 
             // Aguarda a criaçao do arquivo de LOG
