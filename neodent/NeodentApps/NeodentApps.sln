@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BullzipPDFTools", "BullzipP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PDFCore", "PDFCore\PDFCore.csproj", "{EBA95A2C-6DDB-4CC1-A689-789F3D05CE09}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultExport", "VaultExport\VaultExport.csproj", "{EBAFD919-50C5-43E7-9105-ECDD953476DD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultExportUI", "VaultExportUI\VaultExportUI.csproj", "{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{EBA95A2C-6DDB-4CC1-A689-789F3D05CE09}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EBA95A2C-6DDB-4CC1-A689-789F3D05CE09}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EBA95A2C-6DDB-4CC1-A689-789F3D05CE09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBAFD919-50C5-43E7-9105-ECDD953476DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBAFD919-50C5-43E7-9105-ECDD953476DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBAFD919-50C5-43E7-9105-ECDD953476DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBAFD919-50C5-43E7-9105-ECDD953476DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

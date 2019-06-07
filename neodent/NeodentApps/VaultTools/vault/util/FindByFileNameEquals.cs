@@ -8,7 +8,7 @@ namespace VaultTools.vault.util
     /// <summary>
     /// Busca de arquivos pelo seu nome exato.
     /// </summary>
-    class FindByFileNameEquals
+    public class FindByFileNameEquals
     {
         public static List<ADSK.File> FindByNameAndExtEquals(ADSKTools.WebServiceManager serviceManager,
             ADSK.DocumentService documentService,

@@ -3,7 +3,7 @@ using ADSK = Autodesk.Connectivity.WebServices;
 
 namespace VaultTools.vault.util
 {
-    class GetFoldersId
+    public class GetFoldersId
     {
         public static long[] Get(ADSK.DocumentService documentService, string[] baseRepositories)
         {

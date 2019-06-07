@@ -7,7 +7,7 @@ using ADSK = Autodesk.Connectivity.WebServices;
 
 namespace VaultTools.vault.util
 {
-    class VaultUtil
+    public class VaultUtil
     {
         public static ADSKTools.WebServiceManager Login(string server, string vault, string user, string pass)
         {
@@ -29,6 +29,16 @@ namespace VaultTools.vault.util
                 if (prop.SysName == propName)
                 {
                     res = prop;
+                }
+            }
+            if (res == null)
+            {
+                foreach (ADSK.PropDef prop in serviceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE"))
+                {
+                    if (prop.DispName == propName)
+                    {
+                        res = prop;
+                    }
                 }
             }
             return res;

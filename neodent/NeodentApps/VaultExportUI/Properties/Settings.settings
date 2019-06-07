@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="VaultExportUI.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="vaultuser" Type="System.String" Scope="User">
+      <Value Profile="(Default)">integracao</Value>
+    </Setting>
+    <Setting Name="vaultpass" Type="System.String" Scope="User">
+      <Value Profile="(Default)">brasil2010</Value>
+    </Setting>
+    <Setting Name="vaultserveraddr" Type="System.String" Scope="User">
+      <Value Profile="(Default)">br03s059.straumann.com</Value>
+    </Setting>
+    <Setting Name="vaultserver" Type="System.String" Scope="User">
+      <Value Profile="(Default)">neodent</Value>
+    </Setting>
+    <Setting Name="baseRepositories" Type="System.String" Scope="User">
+      <Value Profile="(Default)">$/Neodent/Produção</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
