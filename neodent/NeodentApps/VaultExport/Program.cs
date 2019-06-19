@@ -1,9 +1,10 @@
 using NeodentUtil.util;
+using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
-//using VaultTools.vault;
-//using VaultTools.vault.util;
 using ADSK = Autodesk.Connectivity.WebServices;
 using ADSKTools = Autodesk.Connectivity.WebServicesTools;
 using VDF = Autodesk.DataManagement.Client.Framework;
@@ -23,8 +24,10 @@ namespace VaultExport
         private static string vaultpass = "brasil2010";
         private static string vaultserveraddr = "br03s059.straumann.com";
         private static string vaultserver = "neodent";
+        private static string exportfile = "desenhos.xlsx";
         private static List<string> _desenhos = new List<string>();
         private static Dictionary<long, string> _folders = new Dictionary<long, string>();
+        private const int SHEET_START_COL_INDEX = 15;
 
         private static ADSKTools.WebServiceManager serviceManager = null;
         private static VDF.Vault.Services.Connection.IPropertyManager propertyManager;
@@ -42,7 +45,7 @@ namespace VaultExport
         {
             ParseParams(args);
 
-            LOG.DEBUG = false;
+            //LOG.DEBUG = false;
 
             LOG.debug("Parametros:");
             LOG.debug("===============================");
@@ -50,6 +53,37 @@ namespace VaultExport
             LOG.debug("--- vaultserver.....=" + vaultserver);
             LOG.debug("--- vaultuser.......=" + vaultuser);
             LOG.debug("--- vaultpass.......=" + vaultpass);
+            LOG.debug("--- exportfile......=" + exportfile);
+
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            ISheet sheet = workbook.CreateSheet("desenhos");
+            for (int i = 0; i <= SHEET_START_COL_INDEX; i++)
+            {
+                sheet.SetColumnWidth(i, 1100);
+            }
+            IRow row = sheet.CreateRow(0);
+            ICell cell = row.CreateCell(0);
+            cell.SetCellValue("File Name");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 1);
+            cell.SetCellValue("Level");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 2);
+            cell.SetCellValue("Version");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 3);
+            cell.SetCellValue("Path");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 4);
+            cell.SetCellValue("Checked In");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 5);
+            cell.SetCellValue("Entity Icon");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 6);
+            cell.SetCellValue("File Externsion");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 7);
+            cell.SetCellValue("Material");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 8);
+            cell.SetCellValue("Rev Number");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 9);
+            cell.SetCellValue("Status");
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 10);
+            cell.SetCellValue("TotalVolume");
 
             try
             {
@@ -65,7 +99,6 @@ namespace VaultExport
                     throw new Exception("Falha de login");
                 }
 
-                //serviceManager = VaultUtil.Login(vaultserveraddr, vaultserver, vaultuser, vaultpass);
                 serviceManager = conn.WebServiceManager;
                 propertyManager = conn.PropertyManager;
 
@@ -91,8 +124,8 @@ namespace VaultExport
                     _desenhos.Add("118.345-1_D");
                 }
 
-                //TesteListaTudo(documentService);
-                TesteListaHierarquia(documentService);
+                List<ExportItem> items = PreparaListaHierarquia(documentService);
+                ExportResult(0, 1, sheet, items);
             }
             catch (Exception eManager)
             {
@@ -103,24 +136,29 @@ namespace VaultExport
             {
                 if (serviceManager != null)
                 {
-                    //serviceManager.Dispose();
                     serviceManager.AuthService.SignOut();
                 }
                 if (conn != null)
                 {
-
+                }
+                for (int i = SHEET_START_COL_INDEX + 1; i <= SHEET_START_COL_INDEX + 10; i++)
+                {
+                    sheet.AutoSizeColumn(i);
+                }
+                using (var fs = new FileStream(exportfile, FileMode.Create, FileAccess.Write))
+                {
+                    workbook.Write(fs);
                 }
             }
         }
 
-        private static void TesteListaHierarquia(ADSK.DocumentService documentService)
+        private static List<ExportItem> PreparaListaHierarquia(ADSK.DocumentService documentService)
         {
             List<ADSK.File> tmpFiles = new List<ADSK.File>();
 
             List<ExportItem> items = new List<ExportItem>();
             foreach (string desenho in _desenhos)
             {
-                //List<ADSK.File> files = FindByFileNameEquals.FindByNameAndExtEquals(serviceManager, documentService, baseRepositories, desenho, validExts, true);
                 List<ADSK.File> files = findFiles(serviceManager, documentService, desenho);
                 foreach (ADSK.File file in files)
                 {
@@ -128,46 +166,53 @@ namespace VaultExport
                     items.Add(CalculateFileHierarchy(documentService, file.Id, 0));
                 }
             }
-            Console.WriteLine("File Name,,,,,,,,,,,Level,Version,Path,Checked In,Entity Icon,File Extension,Material,Rev Number,Status,Total Volume");
             items.Sort();
-            PrintResult(items);
-
+            return items;
         }
 
-        private static void PrintResult(List<ExportItem> items)
+        private static int ExportResult(int startCol, int startRow, ISheet sheet, List<ExportItem> items)
         {
-            foreach (ExportItem item in items)
+            int lastRow = startRow;
+            if (items != null && items.Count > 0)
             {
-                Console.WriteLine(item.ToString());
-                PrintResult(item.Children);
+                foreach (ExportItem item in items)
+                {
+                    ExportRow(lastRow, sheet, item);
+                    lastRow = ExportResult(startCol + 1, ++lastRow, sheet, item.Children);
+                }
             }
+            return lastRow;
+        }
+
+        private static void ExportRow(int rowIndex, ISheet sheet, ExportItem item)
+        {
+            IRow row = sheet.CreateRow(rowIndex);
+            ICell cell = row.CreateCell(item.Level);
+            cell.SetCellValue(item.FileName);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 1);
+            cell.SetCellValue(item.Level);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 2);
+            cell.SetCellValue(item.Version);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 3);
+            cell.SetCellValue(item.Path);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 4);
+            cell.SetCellValue(item.CheckedInDate);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 5);
+            cell.SetCellValue(item.EntityIcon);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 6);
+            cell.SetCellValue(item.FileExtension);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 7);
+            cell.SetCellValue(item.Material);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 8);
+            cell.SetCellValue(item.RevNumber);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 9);
+            cell.SetCellValue(item.Status);
+            cell = row.CreateCell(SHEET_START_COL_INDEX + 10);
+            cell.SetCellValue(item.TotalVolume);
         }
 
         private static ExportItem CalculateFileHierarchy(ADSK.DocumentService documentService, long fileId, int level)
         {
-            long[] propsDef = new long[]
-            {
-                2, //SysName=Status,DispName=Status,DataType=String
-                4, //SysName=VersionNumber,DispName=Version,DataType=Numeric
-                33, //SysName=RevNumber,DispName=Rev Number,DataType=String
-                66, //SysName=Doc Type-{9FD0432E-7422-4E30-B7DD-5E0944F413F2},DispName=Doc Type,DataType=String
-                74, //SysName=Design Status-{4D877B8E-1EDF-48B9-B6BC-68EA30BBAA9E},DispName=Design Status,DataType=String
-                76, //SysName=Doc Sub Type-{18F13CF6-4E72-4230-B96B-D4BC53E5E467},DispName=Doc Sub Type,DataType=String
-                77, //SysName=Doc Sub Type Name-{5A493546-7382-434F-AB4F-003F7811333E},DispName=Doc Sub Type Name,DataType=String
-                81, //SysName=External Property Revision-{71F9A929-B943-456C-829E-AAD852A1,DispName=External Property Revision,DataType=String
-                83, //SysName=Material,DispName=Material,DataType=String
-                86, //SysName=PartNumber,DispName=Part Number,DataType=String
-                87, //SysName=Part Property Revision-{DD36BD46-6556-4AC5-AB6F-28F53F2F9EE5,DispName=Part Property Revision,DataType=String
-                91, //SysName=Revision Id-{4C65E173-1CB3-4B03-A441-9487B4E1B3D9},DispName=Revision Id,DataType=String
-                92, //SysName=Database Id-{9EF1D3E5-6947-485E-833C-A4CB8151BD25},DispName=Database Id,DataType=String
-                93, //SysName=Part Icon-{F470C8EE-A1A3-4921-BAAA-411FFFCCBC91},DispName=Part Icon,DataType=Image
-                98, //SysName=TotalMass-{A2644BE1-F601-45F1-88E2-252B85557870},DispName=TotalMass,DataType=String
-                99, //SysName=TotalVolume-{DF6BD00D-D244-4995-B892-E3AE55AA826E},DispName=TotalVolume,DataType=String
-                103, //SysName=UNIDADE-{EA004DF1-45D6-427D-A520-8FEFFD6B7C8B},DispName=UNIDADE,DataType=String
-                136, //SysName=Materials-{1FCE51C2-1BD5-4B7A-84EF-E169C0427A1B},DispName=Materials,DataType=String
-                168, //SysName=RevisÆo-{65F91A3B-D350-41E4-8D4C-2D73B3C22043},DispName=RevisÆo,DataType=String
-                186 //,SysName=Extension,DispName=File Extension,DataType=String
-            };
             ADSK.File parent = documentService.GetFileById(fileId);
             ADSK.Folder folder = documentService.GetFolderById(parent.FolderId);
             ExportItem row = new ExportItem
@@ -285,6 +330,10 @@ namespace VaultExport
                     else if (arg.StartsWith("-vaultserver"))
                     {
                         vaultserver = s.Substring(s.IndexOf('=') + 1);
+                    }
+                    else if (arg.StartsWith("-exportfile"))
+                    {
+                        exportfile = s.Substring(s.IndexOf('=') + 1);
                     }
                     else
                     {

@@ -9,6 +9,7 @@ namespace VaultExportUI
         private const string VaultserveraddrProperty = "vaultserveraddr";
         private const string VaultserverProperty = "vaultserver";
         private const string BaseRepositoriesProperty = "baseRepositories";
+        private const string ExportfileProperty = "exportfile";
 
         [UserScopedSetting()]
         [DefaultSettingValue("integracao")]
@@ -77,6 +78,20 @@ namespace VaultExportUI
             set
             {
                 this[BaseRepositoriesProperty] = (string)value;
+            }
+        }
+
+        [UserScopedSetting()]
+        [DefaultSettingValue("desenhos.xlsx")]
+        public string Exportfile
+        {
+            get
+            {
+                return ((string)this[ExportfileProperty]);
+            }
+            set
+            {
+                this[ExportfileProperty] = (string)value;
             }
         }
     }

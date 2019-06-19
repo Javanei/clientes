@@ -82,5 +82,17 @@ namespace VaultExportUI.Properties {
                 this["baseRepositories"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("desenhos.xlsx")]
+        public string exportfile {
+            get {
+                return ((string)(this["exportfile"]));
+            }
+            set {
+                this["exportfile"] = value;
+            }
+        }
     }
 }

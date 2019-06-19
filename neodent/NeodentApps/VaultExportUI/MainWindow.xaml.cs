@@ -1,6 +1,8 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using System.IO;
 
 namespace VaultExportUI
 {
@@ -11,6 +13,8 @@ namespace VaultExportUI
     {
         private ObservableCollection<string> desenhosSelecionados = new ObservableCollection<string>();
         private VaultConfig config = new VaultConfig();
+
+        private const string EXPORT_LOG_FILE = "exportlog.txt";
 
         public MainWindow()
         {
@@ -48,16 +52,56 @@ namespace VaultExportUI
         {
             if (desenhosSelecionados.Count > 0)
             {
-                string executable = "VaultExport.exe -vaultuser=" + config.Vaultuser
+                string execParams = "-vaultuser=" + config.Vaultuser
                     + " -vaultpass=\"" + config.Vaultpass + "\""
                     + " -vaultserver=\"" + config.Vaultserver + "\""
                     + " -vaultserveraddr=\"" + config.Vaultserveraddr + "\""
+                    + " -exportfile=\"" + config.Exportfile + "\""
                     ;
                 foreach (string s in desenhosSelecionados)
                 {
-                    executable += " \"" + s + "\"";
+                    execParams += " \"" + s + "\"";
                 }
-                System.Console.WriteLine(executable);
+
+                ProcessStartInfo processStartInfo = new ProcessStartInfo("VaultExport.exe ", execParams)
+                {
+                    //WindowStyle = ProcessWindowStyle.Hidden,
+                    //RedirectStandardOutput = false,
+                    //RedirectStandardError = false,
+                    //UseShellExecute = true
+                    WindowStyle = ProcessWindowStyle.Normal,
+                    CreateNoWindow = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+
+                Process process = Process.Start(processStartInfo);
+                bool result = process.WaitForExit(60000);
+                StreamWriter writer = File.CreateText(EXPORT_LOG_FILE);
+                writer.WriteLine(process.StandardOutput.ReadToEnd());
+                writer.WriteLine(process.StandardError.ReadToEnd());
+                writer.Flush();
+                writer.Close();
+
+                ProcessStartInfo logfile = new ProcessStartInfo(EXPORT_LOG_FILE)
+                {
+                    Verb = "Open",
+                    CreateNoWindow = true,
+                    WindowStyle = ProcessWindowStyle.Normal,
+                };
+                Process.Start(logfile);
+
+                if (result)
+                {
+                    ProcessStartInfo sheet = new ProcessStartInfo(config.Exportfile)
+                    {
+                        Verb = "Open",
+                        CreateNoWindow = true,
+                        WindowStyle = ProcessWindowStyle.Normal,
+                    };
+                    Process.Start(sheet);
+                }
             }
         }
 

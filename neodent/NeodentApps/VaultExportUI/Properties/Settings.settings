@@ -17,5 +17,8 @@
     <Setting Name="baseRepositories" Type="System.String" Scope="User">
       <Value Profile="(Default)">$/Neodent/Produção</Value>
     </Setting>
+    <Setting Name="exportfile" Type="System.String" Scope="User">
+      <Value Profile="(Default)">desenhos.xlsx</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
