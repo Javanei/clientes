@@ -84,7 +84,7 @@ namespace VaultExport
             cell.SetCellValue("Status");
             cell = row.CreateCell(SHEET_START_COL_INDEX + 10);
             cell.SetCellValue("TotalVolume");
-
+            LOG.info("Cabecalho da planilha inicializado");
             try
             {
                 VDF.Vault.Results.LogInResult result =
@@ -117,15 +117,11 @@ namespace VaultExport
 
                 ADSK.DocumentService documentService = serviceManager.DocumentService;
 
-                if (_desenhos.Count == 0)
-                {
-                    _desenhos.Add("115.249_D");
-                    _desenhos.Add("104.050_D");
-                    _desenhos.Add("118.345-1_D");
-                }
-
+                LOG.debug("Iniciando leitura dos desenhos");
                 List<ExportItem> items = PreparaListaHierarquia(documentService);
+                LOG.debug("Desenhos lidos. Iniciando geracao da planilha");
                 ExportResult(0, 1, sheet, items);
+                LOG.debug("Planilha gerada");
             }
             catch (Exception eManager)
             {
@@ -147,7 +143,9 @@ namespace VaultExport
                 }
                 using (var fs = new FileStream(exportfile, FileMode.Create, FileAccess.Write))
                 {
+                    LOG.debug("Iniciando gravacao da planilha em disco: " + exportfile);
                     workbook.Write(fs);
+                    LOG.debug("Planilha salva, tudo OK");
                 }
             }
         }
@@ -159,7 +157,7 @@ namespace VaultExport
             List<ExportItem> items = new List<ExportItem>();
             foreach (string desenho in _desenhos)
             {
-                List<ADSK.File> files = findFiles(serviceManager, documentService, desenho);
+                List<ADSK.File> files = FindFiles(serviceManager, documentService, desenho);
                 foreach (ADSK.File file in files)
                 {
                     tmpFiles.Add(file);
@@ -343,31 +341,48 @@ namespace VaultExport
             }
         }
 
-        private static List<ADSK.File> findFiles(ADSKTools.WebServiceManager serviceManager,
+        private static List<ADSK.File> FindFiles(ADSKTools.WebServiceManager serviceManager,
             ADSK.DocumentService documentService,
             string baseFileName)
         {
+            LOG.debug("Iniciando busca no Vault do desenho: " + baseFileName);
             List<ADSK.File> result = new List<ADSK.File>();
 
             for (int i = 0; i < validExts.Length / 2; i++)
             {
-                string fileName = baseFileName + validExts[i, 0];
-
+                LOG.debug("  Buscando com extensao " + validExts[i, 0]);
                 string bookmark = string.Empty;
                 ADSK.SrchStatus status = null;
 
                 ADSK.SrchCond[] conditions = new ADSK.SrchCond[1];
-                conditions[0] = new ADSK.SrchCond
+                if (baseFileName.Equals("*"))
                 {
-                    SrchOper = Condition.EQUALS.Code,
-                    SrchTxt = fileName,
-                    PropTyp = ADSK.PropertySearchType.SingleProperty,
-                    PropDefId = (int)propClientFileName.Id,
-                    SrchRule = ADSK.SearchRuleType.Must
-                };
+                    conditions[0] = new ADSK.SrchCond
+                    {
+                        SrchOper = Condition.CONTAINS.Code,
+                        SrchTxt = validExts[i, 0],
+                        PropTyp = ADSK.PropertySearchType.SingleProperty,
+                        PropDefId = (int)propClientFileName.Id,
+                        SrchRule = ADSK.SearchRuleType.May
+                    };
+                }
+                else
+                {
+                    string fileName = baseFileName + validExts[i, 0];
+
+                    conditions[0] = new ADSK.SrchCond
+                    {
+                        SrchOper = Condition.EQUALS.Code,
+                        SrchTxt = fileName,
+                        PropTyp = ADSK.PropertySearchType.SingleProperty,
+                        PropDefId = (int)propClientFileName.Id,
+                        SrchRule = ADSK.SearchRuleType.Must
+                    };
+                }
 
                 long[] folderIds = GetFoldersId(documentService, baseRepositories);
 
+                LOG.debug("Total de hits: " + (status == null ? "null" : status.TotalHits.ToString()));
                 List<ADSK.File> fileList = new List<ADSK.File>();
                 while (status == null || fileList.Count < status.TotalHits)
                 {
@@ -387,9 +402,16 @@ namespace VaultExport
 
                 if (fileList.Count > 0)
                 {
-                    result.AddRange(fileList);
+                    foreach (ADSK.File f in fileList)
+                    {
+                        if (f.Name.EndsWith(validExts[i, 0]))
+                        {
+                            result.Add(f);
+                        }
+                    }
                 }
             }
+            LOG.debug("Arquivos encontrados para o nome '" + baseFileName + "': " + result.Count);
             return result;
         }
 
