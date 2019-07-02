@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace VaultExport
+namespace VaultTools.vault.util
 {
-    public class ExportItem : IComparable<ExportItem>
+    public class HierarchyItem : IComparable<HierarchyItem>
     {
-        //File Name, Level, Version, Path, Checked In, Entity Icon, File Externsion, Material, Rev Number, Status, TotalVolume
         public string FileName { get; set; }
         public int Level { get; set; }
         public int Version { get; set; }
@@ -19,11 +18,10 @@ namespace VaultExport
         public string TotalVolume { get; set; }
         public string HasChild { get; set; } = "Nao";
         public string IsChild { get; set; } = "Nao";
-        public List<ExportItem> Children { get; set; } = new List<ExportItem>();
+        public List<HierarchyItem> Children { get; set; } = new List<HierarchyItem>();
         public List<string> ExtraCol { get; set; } = new List<string>();
 
-
-        public int CompareTo(ExportItem other)
+        public int CompareTo(HierarchyItem other)
         {
             Children.Sort();
             return FileName.CompareTo(other.FileName);
@@ -54,8 +52,6 @@ namespace VaultExport
                 + ",\"" + RevNumber + "\""
                 + ",\"" + Status + "\""
                 + ",\"" + TotalVolume + "\""
-                //+ ",\"" + HasChild + "\""
-                //+ ",\"" + IsChild + "\""
                 ;
             foreach (string col in ExtraCol)
             {

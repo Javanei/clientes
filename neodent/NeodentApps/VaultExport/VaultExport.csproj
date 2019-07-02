@@ -91,8 +91,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Condition.cs" />
-    <Compile Include="ExportItem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -104,6 +102,10 @@
     <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VaultTools\VaultTools.csproj">
+      <Project>{28866a51-3c15-4ccc-8b5b-38150eb8120a}</Project>
+      <Name>VaultTools</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

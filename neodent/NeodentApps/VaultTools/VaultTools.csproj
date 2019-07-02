@@ -87,7 +87,9 @@
     <Compile Include="vault\util\FindByCheckinDate.cs" />
     <Compile Include="vault\util\FindByFileNameEquals.cs" />
     <Compile Include="vault\util\FindByFileNameMatches.cs" />
+    <Compile Include="vault\util\FindHierarchy.cs" />
     <Compile Include="vault\util\GetFoldersId.cs" />
+    <Compile Include="vault\util\HierarchyItem.cs" />
     <Compile Include="vault\util\VaultUtil.cs" />
   </ItemGroup>
   <ItemGroup>

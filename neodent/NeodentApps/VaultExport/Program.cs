@@ -4,9 +4,7 @@ using NPOI.XSSF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using ADSK = Autodesk.Connectivity.WebServices;
-using ADSKTools = Autodesk.Connectivity.WebServicesTools;
+using VaultTools.vault.util;
 using VDF = Autodesk.DataManagement.Client.Framework;
 
 namespace VaultExport
@@ -16,9 +14,6 @@ namespace VaultExport
         private static readonly string[] baseRepositories = new string[] { "$/Neodent/Produção" };
         private static readonly string[,] validExts = new string[,] { { ".idw", ".idw" } };
 
-        private static readonly Encoding srcEnc = Encoding.GetEncoding("Windows-1252");
-        private static readonly Encoding dstEnc = Encoding.GetEncoding("ibm850");
-
         // Configuração
         private static string vaultuser = "integracao";
         private static string vaultpass = "brasil2010";
@@ -27,19 +22,9 @@ namespace VaultExport
         private static string exportfile = "desenhos.xlsx";
         private static List<string> _desenhos = new List<string>();
         private static Dictionary<long, string> _folders = new Dictionary<long, string>();
-        private const int SHEET_START_COL_INDEX = 15;
+        private const int SHEET_START_COL_INDEX = 1;
 
-        private static ADSKTools.WebServiceManager serviceManager = null;
-        private static VDF.Vault.Services.Connection.IPropertyManager propertyManager;
         private static VDF.Vault.Currency.Connections.Connection conn = null;
-
-        private static ADSK.PropDef propClientFileName;
-        private static ADSK.PropDef propFileExtension;
-        private static ADSK.PropDef propRevNumber;
-        private static ADSK.PropDef propTotalVolume;
-        private static ADSK.PropDef propMaterial;
-        private static VDF.Vault.Currency.Properties.PropertyDefinitionDictionary propDefsDict;
-        private static VDF.Vault.Currency.Properties.PropertyDefinition propEntityIcon;
 
         static void Main(string[] args)
         {
@@ -63,6 +48,8 @@ namespace VaultExport
             }
             IRow row = sheet.CreateRow(0);
             ICell cell = row.CreateCell(0);
+            cell.SetCellValue("Parent");
+            cell = row.CreateCell(1);
             cell.SetCellValue("File Name");
             cell = row.CreateCell(SHEET_START_COL_INDEX + 1);
             cell.SetCellValue("Level");
@@ -99,28 +86,11 @@ namespace VaultExport
                     throw new Exception("Falha de login");
                 }
 
-                serviceManager = conn.WebServiceManager;
-                propertyManager = conn.PropertyManager;
-
-                propClientFileName = GetPropertyDefinition("ClientFileName");
-                propFileExtension = GetPropertyDefinition("Extension");
-                propRevNumber = GetPropertyDefinition("RevNumber");
-                propTotalVolume = GetPropertyDefinition("TotalVolume");
-                propMaterial = GetPropertyDefinition("Material");
-
-                propDefsDict = propertyManager.GetPropertyDefinitions(
-                    VDF.Vault.Currency.Entities.EntityClassIds.Files,
-                    null,
-                    VDF.Vault.Currency.Properties.PropertyDefinitionFilter.IncludeAll
-                );
-                propEntityIcon = propDefsDict[VDF.Vault.Currency.Properties.PropertyDefinitionIds.Client.EntityIcon];
-
-                ADSK.DocumentService documentService = serviceManager.DocumentService;
-
                 LOG.debug("Iniciando leitura dos desenhos");
-                List<ExportItem> items = PreparaListaHierarquia(documentService);
+                List<HierarchyItem> items = FindHierarchy.Find(conn, baseRepositories, validExts, _desenhos);
                 LOG.debug("Desenhos lidos. Iniciando geracao da planilha");
-                ExportResult(0, 1, sheet, items);
+                List<string> printeds = new List<string>();
+                ExportResult(printeds, 0, 0, workbook, sheet, items);
                 LOG.debug("Planilha gerada");
             }
             catch (Exception eManager)
@@ -130,62 +100,68 @@ namespace VaultExport
             }
             finally
             {
-                if (serviceManager != null)
-                {
-                    serviceManager.AuthService.SignOut();
-                }
                 if (conn != null)
                 {
+                    VDF.Vault.Library.ConnectionManager.LogOut(conn);
                 }
-                for (int i = SHEET_START_COL_INDEX + 1; i <= SHEET_START_COL_INDEX + 10; i++)
-                {
-                    sheet.AutoSizeColumn(i);
-                }
-                using (var fs = new FileStream(exportfile, FileMode.Create, FileAccess.Write))
-                {
-                    LOG.debug("Iniciando gravacao da planilha em disco: " + exportfile);
-                    workbook.Write(fs);
-                    LOG.debug("Planilha salva, tudo OK");
-                }
+                SaveSheet(workbook, sheet);
             }
         }
 
-        private static List<ExportItem> PreparaListaHierarquia(ADSK.DocumentService documentService)
+        private static void SaveSheet(XSSFWorkbook workbook, ISheet sheet)
         {
-            List<ADSK.File> tmpFiles = new List<ADSK.File>();
-
-            List<ExportItem> items = new List<ExportItem>();
-            foreach (string desenho in _desenhos)
+            for (int i = SHEET_START_COL_INDEX + 1; i <= SHEET_START_COL_INDEX + 10; i++)
             {
-                List<ADSK.File> files = FindFiles(serviceManager, documentService, desenho);
-                foreach (ADSK.File file in files)
-                {
-                    tmpFiles.Add(file);
-                    items.Add(CalculateFileHierarchy(documentService, file.Id, 0));
-                }
+                sheet.AutoSizeColumn(i);
             }
-            items.Sort();
-            return items;
+            using (var fs = new FileStream(exportfile, FileMode.Create, FileAccess.Write))
+            {
+                LOG.debug("Iniciando gravacao da planilha em disco: " + exportfile);
+                workbook.Write(fs);
+                LOG.debug("Planilha salva, tudo OK");
+            }
         }
 
-        private static int ExportResult(int startCol, int startRow, ISheet sheet, List<ExportItem> items)
+        private static int ExportResult(List<string> printeds, int startCol, int startRow, XSSFWorkbook workbook, ISheet sheet, List<HierarchyItem> items)
         {
             int lastRow = startRow;
             if (items != null && items.Count > 0)
             {
-                foreach (ExportItem item in items)
+                foreach (HierarchyItem _parent in items)
                 {
-                    ExportRow(lastRow, sheet, item);
-                    lastRow = ExportResult(startCol + 1, ++lastRow, sheet, item.Children);
+                    if (!printeds.Contains(_parent.FileName) && _parent.Children != null && _parent.Children.Count > 0)
+                    {
+                        foreach (HierarchyItem item in _parent.Children)
+                        {
+                            ExportRow(++lastRow, sheet, _parent, item);
+                            printeds.Add(_parent.FileName);
+                        }
+                        foreach (HierarchyItem item in _parent.Children)
+                        {
+                            lastRow = ExportResult(printeds, startCol, lastRow, workbook, sheet, _parent.Children);
+                        }
+                    }
+                    /*
+                    if (_parent.Level == 0)
+                    {
+                        SaveSheet(workbook, sheet);
+                    }
+                    */
                 }
             }
             return lastRow;
         }
 
-        private static void ExportRow(int rowIndex, ISheet sheet, ExportItem item)
+        private static void ExportRow(int rowIndex, ISheet sheet, HierarchyItem Parent, HierarchyItem Child)
         {
+            HierarchyItem item = (Child ?? Parent);
+
             IRow row = sheet.CreateRow(rowIndex);
-            ICell cell = row.CreateCell(item.Level);
+            if (Parent != null)
+            {
+                row.CreateCell(0).SetCellValue(Parent.FileName);
+            }
+            ICell cell = row.CreateCell(1);
             cell.SetCellValue(item.FileName);
             cell = row.CreateCell(SHEET_START_COL_INDEX + 1);
             cell.SetCellValue(item.Level);
@@ -207,103 +183,6 @@ namespace VaultExport
             cell.SetCellValue(item.Status);
             cell = row.CreateCell(SHEET_START_COL_INDEX + 10);
             cell.SetCellValue(item.TotalVolume);
-        }
-
-        private static ExportItem CalculateFileHierarchy(ADSK.DocumentService documentService, long fileId, int level)
-        {
-            ADSK.File parent = documentService.GetFileById(fileId);
-            ADSK.Folder folder = documentService.GetFolderById(parent.FolderId);
-            ExportItem row = new ExportItem
-            {
-                FileName = parent.Name,
-                Level = level,
-                Version = parent.VerNum,
-                Path = dstEnc.GetString(srcEnc.GetBytes(folder.FullName)),
-                CheckedInDate = parent.CkInDate != null ? parent.CkInDate.ToString() : "",
-                EntityIcon = parent.Name.Substring(parent.Name.LastIndexOf('.')),
-                Material = "",
-                RevNumber = "",
-                Status = parent.FileStatus.ToString(),
-                TotalVolume = ""
-            };
-
-            ADSK.PropInst[] properties = serviceManager.PropertyService.GetProperties("FILE",
-                new long[] { parent.Id },
-                new long[] { propRevNumber.Id, propFileExtension.Id, propTotalVolume.Id, propMaterial.Id }
-                );
-
-            if (properties != null && properties.Length > 0)
-            {
-                foreach (ADSK.PropInst pinst in properties)
-                {
-                    if (pinst.PropDefId == propRevNumber.Id)
-                    {
-                        row.RevNumber = (string)pinst.Val;
-                    }
-                    else if (pinst.PropDefId == propFileExtension.Id)
-                    {
-                        row.FileExtension = (string)pinst.Val;
-                    }
-                    else if (pinst.PropDefId == propTotalVolume.Id)
-                    {
-                        row.TotalVolume = (string)pinst.Val;
-                    }
-                    else if (pinst.PropDefId == propMaterial.Id)
-                    {
-                        row.Material = (string)pinst.Val;
-                    }
-                }
-            }
-            VDF.Vault.Currency.Entities.FileIteration fi = new VDF.Vault.Currency.Entities.FileIteration(conn, parent);
-
-            try
-            {
-                object propValue = propertyManager.GetPropertyValue(fi, propEntityIcon, null);
-                if (propValue != null)
-                {
-                    VDF.Vault.Currency.Properties.ImageInfo img = (VDF.Vault.Currency.Properties.ImageInfo)propValue;
-                    row.EntityIcon = img.Description;
-                }
-            }
-            catch (Exception ex) { }
-
-            ADSK.FileAssocArray[] associations = documentService.GetFileAssociationsByIds(
-                        new long[] { parent.Id },
-                        ADSK.FileAssociationTypeEnum.Dependency, //parentAssociationType
-                        false, //parentRecurse
-                        ADSK.FileAssociationTypeEnum.Dependency, //childAssociationType
-                        true, //childRecurse
-                        false, //includeRelatedDocuments
-                        true //includeHidden
-                        );
-            if (associations != null && associations.Length > 0)
-            {
-                foreach (ADSK.FileAssocArray assoc in associations)
-                {
-                    ADSK.FileAssoc[] fileAssocs = assoc.FileAssocs;
-                    if (fileAssocs != null && fileAssocs.Length > 0)
-                    {
-                        foreach (ADSK.FileAssoc fa in fileAssocs)
-                        {
-                            if (fa.CldFile.Id != fileId && fa.ParFile.Id == fileId)
-                            {
-                                /*if (fa.CldFile.Name.EndsWith(".idw")
-                                    || fa.CldFile.Name.EndsWith(".ipt")
-                                    || fa.CldFile.Name.EndsWith(".ipn")
-                                    || fa.CldFile.Name.EndsWith(".iam"))
-                                {*/
-                                row.Children.Add(CalculateFileHierarchy(documentService,
-                                    fa.CldFile.Id,
-                                    level + 1
-                                    ));
-                                /*}*/
-                            }
-                        }
-                    }
-                }
-            }
-
-            return row;
         }
 
         private static void ParseParams(string[] args)
@@ -339,117 +218,6 @@ namespace VaultExport
                     }
                 }
             }
-        }
-
-        private static List<ADSK.File> FindFiles(ADSKTools.WebServiceManager serviceManager,
-            ADSK.DocumentService documentService,
-            string baseFileName)
-        {
-            LOG.debug("Iniciando busca no Vault do desenho: " + baseFileName);
-            List<ADSK.File> result = new List<ADSK.File>();
-
-            for (int i = 0; i < validExts.Length / 2; i++)
-            {
-                LOG.debug("  Buscando com extensao " + validExts[i, 0]);
-                string bookmark = string.Empty;
-                ADSK.SrchStatus status = null;
-
-                ADSK.SrchCond[] conditions = new ADSK.SrchCond[1];
-                if (baseFileName.Equals("*"))
-                {
-                    conditions[0] = new ADSK.SrchCond
-                    {
-                        SrchOper = Condition.CONTAINS.Code,
-                        SrchTxt = validExts[i, 0],
-                        PropTyp = ADSK.PropertySearchType.SingleProperty,
-                        PropDefId = (int)propClientFileName.Id,
-                        SrchRule = ADSK.SearchRuleType.May
-                    };
-                }
-                else
-                {
-                    string fileName = baseFileName + validExts[i, 0];
-
-                    conditions[0] = new ADSK.SrchCond
-                    {
-                        SrchOper = Condition.EQUALS.Code,
-                        SrchTxt = fileName,
-                        PropTyp = ADSK.PropertySearchType.SingleProperty,
-                        PropDefId = (int)propClientFileName.Id,
-                        SrchRule = ADSK.SearchRuleType.Must
-                    };
-                }
-
-                long[] folderIds = GetFoldersId(documentService, baseRepositories);
-
-                LOG.debug("Total de hits: " + (status == null ? "null" : status.TotalHits.ToString()));
-                List<ADSK.File> fileList = new List<ADSK.File>();
-                while (status == null || fileList.Count < status.TotalHits)
-                {
-                    ADSK.File[] files = documentService.FindFilesBySearchConditions(
-                        conditions, /*SrchCond [] conditions*/
-                        null, /*SrchSort [] sortConditions*/
-                        folderIds, /*Long [] folderIds*/
-                        true, /*Boolean recurseFolders*/
-                        true, /*Boolean latestOnly*/
-                        ref bookmark, /*[out] String bookmark*/
-                        out status /*[out] SrchStatus searchstatus*/
-                    );
-
-                    if (files != null)
-                        fileList.AddRange(files);
-                }
-
-                if (fileList.Count > 0)
-                {
-                    foreach (ADSK.File f in fileList)
-                    {
-                        if (f.Name.EndsWith(validExts[i, 0]))
-                        {
-                            result.Add(f);
-                        }
-                    }
-                }
-            }
-            LOG.debug("Arquivos encontrados para o nome '" + baseFileName + "': " + result.Count);
-            return result;
-        }
-
-        private static ADSK.PropDef GetPropertyDefinition(string propName)
-        {
-            ADSK.PropDef res = null;
-            foreach (ADSK.PropDef prop in serviceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE"))
-            {
-                if (prop.SysName == propName)
-                {
-                    res = prop;
-                }
-            }
-            if (res == null)
-            {
-                foreach (ADSK.PropDef prop in serviceManager.PropertyService.GetPropertyDefinitionsByEntityClassId("FILE"))
-                {
-                    if (prop.DispName == propName)
-                    {
-                        res = prop;
-                    }
-                }
-            }
-            return res;
-        }
-
-        private static long[] GetFoldersId(ADSK.DocumentService documentService, string[] baseRepositories)
-        {
-            ADSK.Folder[] fld = documentService.FindFoldersByPaths(baseRepositories);
-            long[] folderIds = new long[fld != null ? fld.Length : 1];
-            if (fld != null)
-            {
-                for (int i = 0; i < fld.Length; i++)
-                {
-                    folderIds[i] = fld[i].Id;
-                }
-            }
-            return folderIds;
         }
     }
 }
