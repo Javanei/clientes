@@ -4,16 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{28866A51-3C15-4CCC-8B5B-38150EB8120A}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VaultTools</RootNamespace>
-    <AssemblyName>VaultTools</AssemblyName>
+    <ProjectGuid>{26F563F6-6036-4C03-BFC9-EB5AD772CA91}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VaultDown</RootNamespace>
+    <AssemblyName>VaultDown</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -21,9 +21,9 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -75,40 +75,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="vault\Condition.cs" />
-    <Compile Include="vault\Download.cs" />
-    <Compile Include="vault\DownloadFast.cs" />
-    <Compile Include="vault\Manager.cs" />
-    <Compile Include="vault\PropDefEnum.cs" />
-    <Compile Include="vault\util\DownloadFast.cs" />
-    <Compile Include="vault\util\FindAll.cs" />
-    <Compile Include="vault\util\FindAllInCheckin.cs" />
-    <Compile Include="vault\util\FindByCheckedOut.cs" />
-    <Compile Include="vault\util\FindByCheckinDate.cs" />
-    <Compile Include="vault\util\FindByFileNameEquals.cs" />
-    <Compile Include="vault\util\FindByFileNameMatches.cs" />
-    <Compile Include="vault\util\FindHierarchy.cs" />
-    <Compile Include="vault\util\GetFoldersId.cs" />
-    <Compile Include="vault\util\HierarchyItem.cs" />
-    <Compile Include="vault\util\VaultUtil.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DWFCore\DWFCore.csproj">
-      <Project>{7b4343b8-e4f4-4057-b6c2-4cba0de8760b}</Project>
-      <Name>DWFCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\GSTools\GSTools.csproj">
-      <Project>{12d658d4-5b77-4629-bf0b-4ee2e33c37cd}</Project>
-      <Name>GSTools</Name>
-    </ProjectReference>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\NeodentUtil\NeodentUtil.csproj">
       <Project>{12c80f88-0813-4a3f-af5c-029bb2be6abe}</Project>
       <Name>NeodentUtil</Name>
     </ProjectReference>
-    <ProjectReference Include="..\PDFCore\PDFCore.csproj">
-      <Project>{eba95a2c-6ddb-4cc1-a689-789f3d05ce09}</Project>
-      <Name>PDFCore</Name>
+    <ProjectReference Include="..\VaultTools\VaultTools.csproj">
+      <Project>{28866a51-3c15-4ccc-8b5b-38150eb8120a}</Project>
+      <Name>VaultTools</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

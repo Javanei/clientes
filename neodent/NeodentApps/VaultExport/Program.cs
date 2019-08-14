@@ -11,8 +11,11 @@ namespace VaultExport
 {
     class Program
     {
-        private static readonly string[] baseRepositories = new string[] { "$/Neodent/Produção" };
-        private static readonly string[,] validExts = new string[,] { { ".idw", ".idw" } };
+        private static readonly string[] baseRepositories = new string[] 
+            { "$/Neodent/Produção", "$/Neodent/Registro" };
+        private static readonly string[,] validExts = new string[,] { 
+            { ".idw", ".idw" }
+        };
 
         // Configuração
         private static string vaultuser = "integracao";

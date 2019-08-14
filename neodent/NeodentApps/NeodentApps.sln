@@ -23,6 +23,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultExport", "VaultExport\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultExportUI", "VaultExportUI\VaultExportUI.csproj", "{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VaultDown", "VAultDown\VaultDown.csproj", "{26F563F6-6036-4C03-BFC9-EB5AD772CA91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ListaUnidade", "ListaUnidade\ListaUnidade.csproj", "{4B75F6A6-DBA4-4199-A6F4-A28774B910B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +73,14 @@ Global
 		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E0F994B6-BA66-4F7A-895A-D0218AD2DB1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26F563F6-6036-4C03-BFC9-EB5AD772CA91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26F563F6-6036-4C03-BFC9-EB5AD772CA91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26F563F6-6036-4C03-BFC9-EB5AD772CA91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26F563F6-6036-4C03-BFC9-EB5AD772CA91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B75F6A6-DBA4-4199-A6F4-A28774B910B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B75F6A6-DBA4-4199-A6F4-A28774B910B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B75F6A6-DBA4-4199-A6F4-A28774B910B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B75F6A6-DBA4-4199-A6F4-A28774B910B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

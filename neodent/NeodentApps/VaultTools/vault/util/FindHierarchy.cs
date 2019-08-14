@@ -92,6 +92,7 @@ namespace VaultTools.vault.util
             ADSK.Folder folder = documentService.GetFolderById(parent.FolderId);
             HierarchyItem row = new HierarchyItem
             {
+                Id= parent.Id,
                 FileName = parent.Name,
                 Level = level,
                 Version = parent.VerNum,

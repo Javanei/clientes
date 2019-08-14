@@ -5,6 +5,7 @@ namespace VaultTools.vault.util
 {
     public class HierarchyItem : IComparable<HierarchyItem>
     {
+        public long Id { get; set; }
         public string FileName { get; set; }
         public int Level { get; set; }
         public int Version { get; set; }
