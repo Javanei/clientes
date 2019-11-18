@@ -9,8 +9,11 @@ namespace vaultsap
 {
     class Program
     {
-        private static readonly string[] baseRepositories = new string[] { "$/Neodent/Produção", "$/Neodent/Preset" };
-        private static readonly string[] sheetPrefixes = new string[] { "op_", "ps_" };
+        private static readonly string[] baseRepositoriesNormalMode = new string[] { "$/Neodent/Produção", "$/Neodent/Preset" };
+        private static readonly string[] baseRepositoriesRegistroMode = new string[] { "$/Neodent/Produção", "$/Neodent/Preset", "$/Neodent/Registro" };
+
+        private static string[] baseRepositories = null;
+        private static string[] sheetPrefixes = null; // new string[] { "op_", "ps_" };
 
         private static IDWFConverter dwfconverter = null;
         private static IPDFConverter pdfconverter = null;
@@ -27,6 +30,7 @@ namespace vaultsap
         private static string checkindate;
         private static bool ignorecheckout = false;
         private static bool preservetemp = false;
+        private static string mode = "normal";
 
         // Comandos
         private static bool convertall = false;
@@ -93,6 +97,21 @@ namespace vaultsap
 
             ParseParams(config, args);
 
+            if (baseRepositories == null)
+            {
+                if (mode.ToLower().Equals("registro"))
+                {
+                    baseRepositories = baseRepositoriesRegistroMode;
+                } else
+                {
+                    baseRepositories = baseRepositoriesNormalMode;
+                }
+            }
+            if (mode.Equals("normal"))
+            {
+                sheetPrefixes = new string[] { "op_", "ps_" };
+            }
+
             BullzipPDFTools.converter.Converter conv = new BullzipPDFTools.converter.Converter();
             dwfconverter = conv;
             pdfconverter = conv;
@@ -108,6 +127,7 @@ namespace vaultsap
             LOG.debug("--- tempfolder......=" + tempfolder);
             LOG.debug("--- storagefolder...=" + storagefolder);
             LOG.debug("--- pdfconverterpath=" + pdfconverterpath);
+            LOG.debug("--- mode............=" + mode);
 
             /*
             if (toConvert.Count > 0)
@@ -171,6 +191,8 @@ namespace vaultsap
                 Console.WriteLine("      -sourcedir=<dir>: Converte os arquivos que estão na pasta especificada (e subpastas)");
                 Console.WriteLine("      -ignorecheckout: Na conversão de desenhos específicos, converte mesmo que em checkout");
                 Console.WriteLine("      -preservetemp: Não apaga os arquivos temporários usados durante a conversão");
+                Console.WriteLine("      -mode=normal: Informa o modo de conversao. Opcoes validas: normal/registro");
+                Console.WriteLine("      -pastas=Pastas: Lista de pastas de onde vai ser lido os desenhos");
                 Console.WriteLine("    Opcoes validas para [comando]:");
                 Console.WriteLine("      -convertall: Converte TODOS os desenhos que estão em checkin");
                 Console.WriteLine("      -convert: Converte os desenhos a partir da data de checkin informada por -checkindate. Se não informada busca a data no arquivo vaultsap.conf. Se também não encontrar, converte TODOS os desenhos");
@@ -309,6 +331,24 @@ namespace vaultsap
                     {
                         storagefolder = s.Substring(s.IndexOf('=') + 1);
                         DictionaryUtil.SetProperty(config, "storagefolder", storagefolder);
+                    }
+                    else if (arg.StartsWith("-mode"))
+                    {
+                        mode = s.Substring(s.IndexOf('=') + 1).ToLower();
+                        if (!mode.Equals("normal") && !mode.Equals("registro"))
+                        {
+                            mode = "normal";
+                        }
+                    }
+                    else if (arg.StartsWith("-pastas"))
+                    {
+                        string pastas = s.Substring(s.IndexOf('=') + 1);
+                        string[] tmp = pastas.Split(',');
+                        baseRepositories = new string[tmp.Length];
+                        for(int i = 0; i < tmp.Length; i++)
+                        {
+                            baseRepositories[i] = "$/Neodent/" + tmp[i];
+                        }
                     }
                     else if (arg.StartsWith("-pdfconverterpath"))
                     {
