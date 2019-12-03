@@ -28,6 +28,7 @@ namespace VaultTools.vault
         private string tempfolder;
         private string storagefolder;
         private string confFile = "vaultsap.conf";
+        private string mode;
 
         private ADSKTools.WebServiceManager serviceManager = null;
 
@@ -38,7 +39,8 @@ namespace VaultTools.vault
             string[,] validExts,
             string[] sheetPrefixes,
             string storagefolder,
-            string tempfolder)
+            string tempfolder,
+            string mode)
         {
             this.dwfconverter = dwfconverter;
             this.pdfconverter = pdfconverter;
@@ -48,6 +50,7 @@ namespace VaultTools.vault
             this.sheetPrefixes = sheetPrefixes;
             this.storagefolder = storagefolder;
             this.tempfolder = tempfolder;
+            this.mode = mode;
         }
 
         public Manager(IDWFConverter dwfconverter,
@@ -61,7 +64,8 @@ namespace VaultTools.vault
             string user,
             string pass,
             string storagefolder,
-            string tempfolder)
+            string tempfolder,
+            string mode)
         {
             this.dwfconverter = dwfconverter;
             this.pdfconverter = pdfconverter;
@@ -75,6 +79,7 @@ namespace VaultTools.vault
             this.pass = pass;
             this.storagefolder = storagefolder;
             this.tempfolder = tempfolder;
+            this.mode = mode;
             serviceManager = util.VaultUtil.Login(this.server, this.vault, this.user, this.pass);
         }
 
@@ -397,7 +402,7 @@ namespace VaultTools.vault
                 // Copia o desenho para a pasta temporaria
                 File.Copy(filedir + "\\" + filename, filepath);
 
-                result = ConvertFile(filepath, desenho, sheetPrefixes);
+                result = ConvertFile(filepath, desenho, sheetPrefixes, mode);
 
                 // Limpa o diretorio temporario
                 if (!preservetemp)
@@ -493,7 +498,7 @@ namespace VaultTools.vault
             }
         }
 
-        private bool ConvertFile(string file, string desenho, string[] sheetPrefixes)
+        private bool ConvertFile(string file, string desenho, string[] sheetPrefixes, string mode)
         {
             bool result = false;
             LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 1 - file=" + file);
@@ -504,7 +509,7 @@ namespace VaultTools.vault
             List<string> images = null;
             if (file.EndsWith(".dwf"))
             {
-                images = dwfconverter.DwfToPDF(file, imgTempfolder, sheetPrefixes);
+                images = dwfconverter.DwfToPDF(file, imgTempfolder, sheetPrefixes, mode);
                 LOG.debug("@@@@@@@@@@@@ Manager.ConvertFile - 3 - imagens (DWF) para mergear: " + images.Count);
             }
             else if (file.EndsWith(".pdf"))
@@ -569,7 +574,7 @@ namespace VaultTools.vault
                 LOG.debug("@@@@@@@@@@ Manager.Convert - 4 - Download efetuado - " + downFile + " - " + File.Exists(downFile));
                 File.SetAttributes(downFile, FileAttributes.Normal);
 
-                result = ConvertFile(downFile, desenho, sheetPrefixes);
+                result = ConvertFile(downFile, desenho, sheetPrefixes, mode);
 
                 // Limpa o diretorio temporario
                 if (!preservetemp)

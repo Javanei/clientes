@@ -17,8 +17,14 @@ namespace VaultTools.vault.util
             string[,] validExts,
             bool ignoreCheckout)
         {
+            string dir = "";
+            foreach (string s in baseRepositories)
+            {
+                if (dir.Length > 0) dir = dir + ",";
+                dir = dir + s;
+            }
             LOG.debug("@@@@@@@@ FindByFileNameEquals.FindByNameAndExtEquals - 1 - (filename=" + filename
-                + ", ignoreCheckout=" + ignoreCheckout + ")");
+                + ", ignoreCheckout=" + ignoreCheckout + ", baseRepo=" + dir + ")");
 
             List<ADSK.File> fl = ignoreCheckout
                 ? FindByNameEquals(serviceManager, documentService, baseRepositories, filename)

@@ -45,13 +45,13 @@ namespace BullzipPDFTools.converter
             return settings;
         }
 
-        public List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes)
+        public List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes, string mode)
         {
             LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 1 - (dwfFile=" + dwfFile + ")");
             List<string> imgToConvert = new List<string>();
 
             Dictionary<string, string> fileProps = new Dictionary<string, string>();
-            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps, sheetPrefixes);
+            DWFTools.util.DWFUtil.Extract(imgTempfolder, dwfFile, fileProps, sheetPrefixes, mode);
             LOG.debug("@@@@@@@@ BullzipPDFTools.DwfToPDF - 2 - fileProps: " + fileProps.Count);
             if (fileProps.Count <= 2)
             {
@@ -68,8 +68,10 @@ namespace BullzipPDFTools.converter
 
             PdfSettings settings = CreatePdfSettings();
 
+            //TODO: TRATAR AQUI
             string logFile = imgTempfolder + "\\" + codigoDesenho + ".log";
-            string outPdf = imgTempfolder + "\\" + codigoDesenho + ".pdf";
+            string nonOP = DictionaryUtil.GetProperty(fileProps, "-2");
+            string outPdf = imgTempfolder + "\\" + (nonOP != null && nonOP.Trim().Length > 0 ? "NOOP" + "_" : "") + codigoDesenho + ".pdf";
             settings.SetValue(BullzipPDFOptions.StatusFile.ToString(), logFile);
             if (singleFile)
             {

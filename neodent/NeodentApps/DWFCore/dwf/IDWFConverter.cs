@@ -4,6 +4,6 @@ namespace DWFCore.dwf
 {
     public interface IDWFConverter
     {
-        List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes);
+        List<string> DwfToPDF(string dwfFile, string imgTempfolder, string[] sheetPrefixes, string mode);
     }
 }

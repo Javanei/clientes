@@ -13,7 +13,8 @@ namespace vaultsap
         private static readonly string[] baseRepositoriesRegistroMode = new string[] { "$/Neodent/Produção", "$/Neodent/Preset", "$/Neodent/Registro" };
 
         private static string[] baseRepositories = null;
-        private static string[] sheetPrefixes = null; // new string[] { "op_", "ps_" };
+        //private static string[] sheetPrefixes = null; // new string[] { "op_", "ps_" };
+        private static string[] sheetPrefixes = new string[] { "op_", "ps_" };
 
         private static IDWFConverter dwfconverter = null;
         private static IPDFConverter pdfconverter = null;
@@ -107,10 +108,10 @@ namespace vaultsap
                     baseRepositories = baseRepositoriesNormalMode;
                 }
             }
-            if (mode.Equals("normal"))
-            {
-                sheetPrefixes = new string[] { "op_", "ps_" };
-            }
+            //if (mode.Equals("normal"))
+            //{
+            //    sheetPrefixes = new string[] { "op_", "ps_" };
+            //}
 
             BullzipPDFTools.converter.Converter conv = new BullzipPDFTools.converter.Converter();
             dwfconverter = conv;
@@ -211,8 +212,8 @@ namespace vaultsap
                 try
                 {
                     VaultTools.vault.Manager manager = filesToConvert.Count == 0
-                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, validExts, sheetPrefixes, vaultserver, vaultuser, vaultpass, storagefolder, tempfolder)
-                        : new VaultTools.vault.Manager(dwfconverter, pdfconverter, pdfconverterpath, baseRepositories, validExts, sheetPrefixes, storagefolder, tempfolder);
+                        ? new VaultTools.vault.Manager(dwfconverter, pdfconverter, pdfconverterpath, vaultserveraddr, baseRepositories, validExts, sheetPrefixes, vaultserver, vaultuser, vaultpass, storagefolder, tempfolder, mode)
+                        : new VaultTools.vault.Manager(dwfconverter, pdfconverter, pdfconverterpath, baseRepositories, validExts, sheetPrefixes, storagefolder, tempfolder, mode);
                     try
                     {
                         if (filesToConvert.Count > 0)
@@ -347,7 +348,14 @@ namespace vaultsap
                         baseRepositories = new string[tmp.Length];
                         for(int i = 0; i < tmp.Length; i++)
                         {
-                            baseRepositories[i] = "$/Neodent/" + tmp[i];
+                            if (tmp[i].ToLower().Equals("producao") || tmp[i].ToLower().Equals("produção"))
+                            {
+                                baseRepositories[i] = "$/Neodent/Produção";
+                            }
+                            else
+                            {
+                                baseRepositories[i] = "$/Neodent/" + tmp[i];
+                            }
                         }
                     }
                     else if (arg.StartsWith("-pdfconverterpath"))

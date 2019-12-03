@@ -7,7 +7,8 @@ namespace DWFTools.util
 {
     public class DWFUtil
     {
-        public static Dictionary<string, string> Extract(String dir, String fileName, Dictionary<string, string> d, string[] sheetPrefixes)
+        public static Dictionary<string, string> Extract(String dir, String fileName, Dictionary<string, string> d, 
+            string[] sheetPrefixes, string mode)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@ Extract - 1 - (dir=" + dir + ", fileName=" + fileName + ") - Vai extrair o manifext.xml");
             NeodentUtil.util.DictionaryUtil.SetProperty(d, "0", "False=Extract");
@@ -24,19 +25,20 @@ namespace DWFTools.util
                 zip1.Dispose();
             }
             NeodentUtil.util.LOG.debug("@@@@@@@@ Extract - 2 - Extraiu o manifext.xml");
-            d = ParseXml(dir + "\\manifest.xml", d, sheetPrefixes);
+            d = ParseXml(dir + "\\manifest.xml", d, sheetPrefixes, mode);
             return d;
         }
 
         /**
          * Interpreta o manifest.xml
          */
-        private static Dictionary<string, string> ParseXml(String fileName, Dictionary<string, string> d, string[] sheetPrefixes)
+        private static Dictionary<string, string> ParseXml(String fileName, Dictionary<string, string> d, string[] sheetPrefixes, string mode)
         {
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 1 - (fileName=" + fileName + ") - Vai fazer o parser do arquivo: " + fileName);
             NeodentUtil.util.DictionaryUtil.SetProperty(d, "0", "False=parseXml");
             int sheetNum = 0;
             XmlTextReader reader = new XmlTextReader(fileName);
+            bool nonOP = false;
             while (reader.Read())
             {
                 if (reader.Name == "dwf:Section")
@@ -61,25 +63,22 @@ namespace DWFTools.util
                                     }
                                     if (processar && reader.Name.Equals("title"))
                                     {
-                                        //TODO: TRATAR AQUI
-                                        if (sheetPrefixes != null)
+                                        foreach (string s in sheetPrefixes)
                                         {
-                                            foreach (string s in sheetPrefixes)
+                                            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + reader.Value + ", prefix=" + s);
+                                            if (reader.Value.ToLower().IndexOf(s) >= 0)
                                             {
-                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + reader.Value + ", prefix=" + s);
-                                                if (reader.Value.ToLower().IndexOf(s) >= 0)
-                                                {
-                                                    sheetName = reader.Value;
-                                                    sheetPrefix = s.Substring(0, 2).ToUpper();
-                                                    NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 3 - encontrou sheet: " + sheetName);
-                                                }
+                                                sheetName = reader.Value;
+                                                sheetPrefix = s.Substring(0, 2).ToUpper();
+                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 3 - encontrou sheet: " + sheetName);
                                             }
-                                        } else
+                                        }
+                                        if (sheetName == null && mode.ToLower().Equals("registro"))
                                         {
-                                            sheetPrefix = "ALL";
                                             sheetName = reader.Value;
+                                            sheetPrefix = "ALL";
                                             NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 4 - considerando todos=" + reader.Value + ", prefix=" + sheetPrefix);
-
+                                            nonOP = true;
                                         }
                                     }
                                 }
@@ -94,6 +93,10 @@ namespace DWFTools.util
                 }
             }
             reader.Close();
+            if (nonOP)
+            {
+                NeodentUtil.util.DictionaryUtil.SetProperty(d, "-2", "NOOP");
+            }
             NeodentUtil.util.DictionaryUtil.SetProperty(d, "-1", sheetNum.ToString());
             NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 5 - Fez o parser do arquivo: " + fileName);
             return d;
