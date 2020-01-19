@@ -22,6 +22,10 @@ namespace BullzipPDFTools.converter
         AfterPrintProgram,
         AfterPrintProgramDir,
         AfterPrintProgramMode, //The mode is used to control if the program is started as hidden, normal, minimized, or maximized.
+        WatermarkText, //The text you want in your watermark
+        WatermarkSize, //An integer value between 1 and 100 indicating the size of the watermark text. The default value is 6
+        WatermarkTransparency, //A transparency percentage from 0 to 100 determines the darkness of the watermark. 0 is black and 100 is white (invisible). Normal values are in the range from 70 to 90
+        WatermarkRotation, //The water mark can be rotated. Specify an integer value between 0 and 360. You can also specify the value 'c2c' or '-c2c'. This will rotate the watermark in the direction 'Corner to Corner'
         RunOnSuccess,
         RunOnSuccessDir,
         RunOnSuccessMode,

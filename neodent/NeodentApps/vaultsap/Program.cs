@@ -100,7 +100,7 @@ namespace vaultsap
 
             if (baseRepositories == null)
             {
-                if (mode.ToLower().Equals("registro"))
+                if (mode.ToLower().Equals("registro") || mode.ToLower().Equals("noop") || mode.ToLower().Equals("nooponly"))
                 {
                     baseRepositories = baseRepositoriesRegistroMode;
                 } else
@@ -192,7 +192,7 @@ namespace vaultsap
                 Console.WriteLine("      -sourcedir=<dir>: Converte os arquivos que estão na pasta especificada (e subpastas)");
                 Console.WriteLine("      -ignorecheckout: Na conversão de desenhos específicos, converte mesmo que em checkout");
                 Console.WriteLine("      -preservetemp: Não apaga os arquivos temporários usados durante a conversão");
-                Console.WriteLine("      -mode=normal: Informa o modo de conversao. Opcoes validas: normal/registro");
+                Console.WriteLine("      -mode=normal: Informa o modo de conversao. Opcoes validas: normal/registro/noop/nooponly");
                 Console.WriteLine("      -pastas=Pastas: Lista de pastas de onde vai ser lido os desenhos");
                 Console.WriteLine("    Opcoes validas para [comando]:");
                 Console.WriteLine("      -convertall: Converte TODOS os desenhos que estão em checkin");
@@ -336,7 +336,7 @@ namespace vaultsap
                     else if (arg.StartsWith("-mode"))
                     {
                         mode = s.Substring(s.IndexOf('=') + 1).ToLower();
-                        if (!mode.Equals("normal") && !mode.Equals("registro"))
+                        if (!mode.Equals("normal") && !mode.Equals("registro") && !mode.Equals("noop") && !mode.Equals("nooponly"))
                         {
                             mode = "normal";
                         }

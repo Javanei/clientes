@@ -39,6 +39,7 @@ namespace DWFTools.util
             int sheetNum = 0;
             XmlTextReader reader = new XmlTextReader(fileName);
             bool nonOP = false;
+            bool achouOP = false;
             while (reader.Read())
             {
                 if (reader.Name == "dwf:Section")
@@ -68,17 +69,36 @@ namespace DWFTools.util
                                             NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 2 - validando sheet=" + reader.Value + ", prefix=" + s);
                                             if (reader.Value.ToLower().IndexOf(s) >= 0)
                                             {
-                                                sheetName = reader.Value;
-                                                sheetPrefix = s.Substring(0, 2).ToUpper();
-                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 3 - encontrou sheet: " + sheetName);
+                                                achouOP = true;
+                                                if (!mode.ToLower().Equals("nooponly"))
+                                                {
+                                                    sheetName = reader.Value;
+                                                    sheetPrefix = s.Substring(0, 2).ToUpper();
+                                                    NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 3 - encontrou sheet: " + sheetName);
+                                                } else
+                                                {
+                                                    continue;
+                                                }
                                             }
                                         }
-                                        if (sheetName == null && mode.ToLower().Equals("registro"))
+                                        if (sheetName == null)
                                         {
-                                            sheetName = reader.Value;
-                                            sheetPrefix = "ALL";
-                                            NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 4 - considerando todos=" + reader.Value + ", prefix=" + sheetPrefix);
-                                            nonOP = true;
+                                            if (mode.ToLower().Equals("registro") || mode.ToLower().Equals("noop") || mode.ToLower().Equals("nooponly"))
+                                            {
+                                                sheetName = reader.Value;
+                                                sheetPrefix = "ALL";
+                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 4 - considerando todos=" + reader.Value + ", prefix=" + sheetPrefix);
+                                                nonOP = true;
+                                            }
+                                        } else
+                                        {
+                                            if (mode.ToLower().Equals("noop") || mode.ToLower().Equals("nooponly"))
+                                            {
+                                                NeodentUtil.util.LOG.debug("@@@@@@@@@@@@@@ ParseXml - 5 - ignorando nao op=" + reader.Value + ", prefix=" + sheetPrefix);
+                                                sheetName = null;
+                                                sheetPrefix = null;
+                                                nonOP = true;
+                                            }
                                         }
                                     }
                                 }
@@ -93,12 +113,19 @@ namespace DWFTools.util
                 }
             }
             reader.Close();
+            if (mode.ToLower().Equals("nooponly"))
+            {
+                for(int i = 0; i <= 30; i++)
+                {
+                    d.Remove("" + i);
+                }
+            }
             if (nonOP)
             {
                 NeodentUtil.util.DictionaryUtil.SetProperty(d, "-2", "NOOP");
             }
             NeodentUtil.util.DictionaryUtil.SetProperty(d, "-1", sheetNum.ToString());
-            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 5 - Fez o parser do arquivo: " + fileName);
+            NeodentUtil.util.LOG.debug("@@@@@@@@@@ ParseXml - 6 - Fez o parser do arquivo: " + fileName);
             return d;
         }
     }
